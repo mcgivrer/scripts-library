@@ -1,0 +1,132 @@
+#!/bin/bash
+export junit_version=1.12.2
+# create project folder structure
+mkdir -p $1/{src/{docs,{main,test}/{java,resources/i18n}},libs}
+# Add the README file
+echo """# README
+
+This is the readme file for the proeject $1
+
+That's all falk !
+""" > $1/README.md
+# Add the internationalisation file
+echo """app.name=$1
+app.version=0.0.1
+app.language=English
+""" > $1/src/main/resources/i18n/messages.properties
+# Add the configuration file
+echo """app.debug=0
+app.mode=PROD
+""" > $1/src/main/resources/config.properties
+# Add main class
+echo """
+import java.io.IOException;
+import java.util.Properties;
+import java.util.Locale;
+import java.util.ResourceBundle;
+
+public class App {
+
+  public enum Mode {
+          DEV,
+          TEST,
+          PROD;
+  }
+
+  private static final ResourceBundle messages = ResourceBundle.getBundle(\"i18n/messages\",Locale.ROOT);
+  private static final Properties config = new Properties();
+
+  private final String version = messages.getString(\"app.version\");
+  private final String appName = messages.getString(\"app.name\");
+  private final String language = messages.getString(\"app.language\");
+
+  private int debug = 0;
+  private Mode mode=Mode.PROD;
+
+  public App() {
+    System.out.println(\"Starts %s (%s)\".formatted(appName, version));
+    System.out.println(\"Language: %s\".formatted(language));
+    initConfig(\"config.properties\");
+
+  }
+
+  private void initConfig(String fileName) {
+    // set default values
+    config.setProperty(\"app.debug\", \"0\");
+    config.setProperty(\"app.mode\",\"PROD\");
+    // load values from configuration file
+    try {
+      config.load(this.getClass().getResourceAsStream(fileName));
+      // extract values
+    } catch (IOException e) {
+      System.err.printf(\"Unable to read configuration from file '%s'%n\", fileName);
+    }
+  }
+
+  private void parseConfiguration() {
+    for (String key : config.stringPropertyNames()) {
+      switch (key) {
+        case \"app.debug\", \"debug\" -> {
+          int debug = Integer.parseInt(config.getProperty(key));
+          System.out.printf(\"debug: %d%n\", debug);
+        }
+        case \"app.mode\", \"mode\",\"m\" -> {
+          this.mode = Mode.valueOf(config.getProperty(key).toUpperCase());
+          System.out.printf(\"mode: %s%n\",mode);
+        }
+        default -> {
+
+        }
+      }
+    }
+  }
+
+  public void run(String[] args) {
+    for (String arg : args) {
+      System.out.printf(\"- argument:%s%n\", arg);
+
+    }
+    for (String arg : args) {
+      if (arg.contains(\"=\")) {
+        String[] keyValue = arg.split(\"=\", 2);
+        String key = keyValue[0];
+        String value = keyValue[1];
+        config.setProperty(key, value);
+        System.out.printf(\"Overridden config: %s=%s%n\", key, value);
+      }
+    }
+    parseConfiguration();
+    System.out.println(\"End.\");
+  }
+
+  public static void main(String[] args) {
+    App app = new App();
+    app.run(args);
+  }
+}
+""" > $1/src/main/java/App.java
+# Add docs
+app_name=$1
+echo """# Project ${app_name}
+
+## Preface
+
+This is the preface for the documentation of the project ${app_name}.
+You must rewrite this document according to your specifications.
+
+>[!NOTE]
+>Please us the markdown text format to easily create 
+>docs in multiple format with the 'pandoc' tool. 
+
+""" > $1/src/docs/00-preface.md
+# Add build script
+cp ~/scripts/build-mini.sh $1/build
+# Add junit library
+curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit_version}/junit-platform-console-standalone-${junit_version}.jar >$1/libs/junit-platform-console-standalone-${junit_version}.jar
+# create local git repository
+cd $1;
+git init --initial-branch=main
+git add .
+git commit -m "Create the project '$1'" 
+echo "Project '$1' created."
+
