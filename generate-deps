@@ -1,0 +1,3 @@
+#!/bin/bash
+export appname=mytestapp
+jdeps --ignore-missing-deps -q --multi-release 17 --print-module-deps target/${appname}-0.0.2-SNAPSHOT-shaded.jar >jre-deps.info
