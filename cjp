@@ -5,7 +5,7 @@ mkdir -p $1/{src/{docs,{main,test}/{java,resources/i18n}},libs}
 # Add the README file
 echo """# README
 
-This is the readme file for the proeject $1
+This is the readme file for the project $1
 
 That's all falk !
 """ > $1/README.md
@@ -18,93 +18,136 @@ app.language=English
 echo """app.debug=0
 app.mode=PROD
 """ > $1/src/main/resources/config.properties
+# Add .gitignore
+echo """
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.db
+*.log
+*.tmp
+*.swp
+*.swo
+""" > $1/.gitignore
 # Add main class
 echo """
 import java.io.IOException;
-import java.util.Properties;
+import java.time.ZonedDateTime;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.ResourceBundle;
 
 public class App {
 
   public enum Mode {
-          DEV,
-          TEST,
-          PROD;
+    DEV, TEST, PROD;
   }
 
-  private static final ResourceBundle messages = ResourceBundle.getBundle(\"i18n/messages\",Locale.ROOT);
+  public enum LogLevel {
+    DEBUG, INFO, WARN, ERROR;
+  }
+
+  private static final ResourceBundle messages = ResourceBundle.getBundle(\"i18n/messages\", Locale.ROOT);
   private static final Properties config = new Properties();
+  private static String configFileName = \"config.properties\";
 
   private final String version = messages.getString(\"app.version\");
   private final String appName = messages.getString(\"app.name\");
   private final String language = messages.getString(\"app.language\");
 
-  private int debug = 0;
-  private Mode mode=Mode.PROD;
+  private static int debug = 0;
+  private Mode mode = Mode.PROD;
 
   public App() {
-    System.out.println(\"Starts %s (%s)\".formatted(appName, version));
-    System.out.println(\"Language: %s\".formatted(language));
-    initConfig(\"config.properties\");
+    log(App.class, LogLevel.INFO, \"%s (%s)\".formatted(appName, version));
+    log(App.class, LogLevel.INFO, \"Language: %s\".formatted(language));
+    log(App.class, LogLevel.INFO, \"Starts...\");
 
   }
 
   private void initConfig(String fileName) {
     // set default values
     config.setProperty(\"app.debug\", \"0\");
-    config.setProperty(\"app.mode\",\"PROD\");
+    config.setProperty(\"app.mode\", \"PROD\");
+    config.setProperty(\"configFileName\", \"config.properties\");
     // load values from configuration file
     try {
       config.load(this.getClass().getResourceAsStream(fileName));
       // extract values
     } catch (IOException e) {
-      System.err.printf(\"Unable to read configuration from file '%s'%n\", fileName);
+      log(App.class, LogLevel.ERROR, \"Unable to read configuration from file '%s' : %s%n\", fileName, e.getMessage());
     }
   }
 
   private void parseConfiguration() {
     for (String key : config.stringPropertyNames()) {
       switch (key) {
-        case \"app.debug\", \"debug\" -> {
-          int debug = Integer.parseInt(config.getProperty(key));
-          System.out.printf(\"debug: %d%n\", debug);
-        }
-        case \"app.mode\", \"mode\",\"m\" -> {
-          this.mode = Mode.valueOf(config.getProperty(key).toUpperCase());
-          System.out.printf(\"mode: %s%n\",mode);
-        }
-        default -> {
+      case \"app.debug\", \"debug\" -> {
+        int debug = Integer.parseInt(config.getProperty(key));
+        log(App.class, LogLevel.INFO, \"- debug: %d\", debug);
+      }
+      case \"app.mode\", \"mode\", \"m\" -> {
+        this.mode = Mode.valueOf(config.getProperty(key).toUpperCase());
+        log(App.class, LogLevel.INFO, \"- mode: %s\", mode);
+      }
+      default -> {
 
-        }
+      }
       }
     }
   }
 
   public void run(String[] args) {
     for (String arg : args) {
-      System.out.printf(\"- argument:%s%n\", arg);
-
-    }
-    for (String arg : args) {
       if (arg.contains(\"=\")) {
         String[] keyValue = arg.split(\"=\", 2);
         String key = keyValue[0];
         String value = keyValue[1];
         config.setProperty(key, value);
-        System.out.printf(\"Overridden config: %s=%s%n\", key, value);
+        log(App.class, LogLevel.INFO, \"Overridden config: %s=%s\", key, value);
       }
     }
+    configFileName = config.getProperty(\"configFileName\", \"config.properties\");
+    initConfig(configFileName);
     parseConfiguration();
-    System.out.println(\"End.\");
+    log(App.class, LogLevel.INFO, \"End.\");
   }
 
   public static void main(String[] args) {
     App app = new App();
     app.run(args);
   }
+
+  public static boolean isDebugGreaterThan(int i) {
+    return debug > i;
+  }
+
+  public static void log(Class<?> className, LogLevel level, String message, Object... args) {
+    System.out.printf(\"%s;%s;[%s];%s%n\", ZonedDateTime.now(), level, className.getName(), message.formatted(args));
+  }
 }
+
 """ > $1/src/main/java/App.java
+# VS Code integration
+mkdir -p $1/.vscode
+echo """
+{
+    \"java.format.settings.url\": \".vscode/java-formatter.xml\",
+    \"java.project.sourcePaths\": [
+        \"src/main/java\",
+        \"src/main/resources\",
+        \"src/test/java\",
+        \"src/test/resources\"
+    ],
+    \"java.project.encoding\": \"warning\",
+    \"java.project.referencedLibraries\": [],
+    \"java.project.outputPath\": \"target/classes\"
+}
+""" > $1/.vscode/settings.json
+cp ~/scripts/scripts-library/java-formatter.xml $1/.vscode/java-formatter.xml	
+
 # Add docs
 app_name=$1
 echo """# Project ${app_name}
