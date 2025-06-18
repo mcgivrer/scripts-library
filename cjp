@@ -1,23 +1,24 @@
 #!/bin/bash
-export junit_version=1.12.2
+junit_version=1.12.2
+app_name=$1
 # create project folder structure
-mkdir -p $1/{src/{docs,{main,test}/{java,resources/i18n}},libs}
+mkdir -p ${app_name}/{src/{docs,{main,test}/{java,resources/i18n}},libs}
 # Add the README file
-cat <<EOL > $1/README.md
+cat <<EOL > ${app_name}/README.md
 # README
 
-This is the readme file for the project $1
+This is the readme file for the project ${app_name}
 
 That's all folks !
 EOL
 # Add the internationalisation file
-cat <<EOL > $1/src/main/resources/i18n/messages.properties
-app.name=$1
+cat <<EOL > ${app_name}/src/main/resources/i18n/messages.properties
+app.name=${app_name}
 app.version=0.0.1
 app.language=English
 EOL
 # Add the configuration file
-cat <<EOL > $1/src/main/resources/config.properties
+cat <<EOL > ${app_name}/src/main/resources/config.properties
 app.debug=0
 app.mode=PROD
 EOL
@@ -33,10 +34,10 @@ target/
 *.tmp
 *.swp
 *.swo
-""" > $1/.gitignore
+""" > ${app_name}/.gitignore
 # Add main class
-mkdir -p "$1/src/main/java/core"
-CAT <<EOL > "$1/src/main/java/core/App.java"
+mkdir -p "${app_name}/src/main/java/core"
+CAT <<EOL > "${app_name}/src/main/java/core/App.java"
 package core;
 import java.io.IOException;
 import java.time.ZonedDateTime;
@@ -58,26 +59,38 @@ public class App {
   private static final Properties config = new Properties();
   private static String configFileName = \"config.properties\";
 
-  private final String version = messages.getString(\"app.version\");
-  private final String appName = messages.getString(\"app.name\");
-  private final String language = messages.getString(\"app.language\");
-
   private static int debug = 0;
   private Mode mode = Mode.PROD;
 
   public App() {
-    log(App.class, LogLevel.INFO, \"%s (%s)\".formatted(appName, version));
-    log(App.class, LogLevel.INFO, \"Language: %s\".formatted(language));
+    log(App.class, LogLevel.INFO, \"%s (%s)\".formatted(
+    	messages.getString(\"app.name\"), 
+    	messages.getString(\"app.version\")));
+    log(App.class, LogLevel.INFO, \"Language: %s\".formatted(
+    	messages.getString(\"app.language\");));
     log(App.class, LogLevel.INFO, \"Starts...\");
 
   }
 
-  private void initConfig(String fileName) {
+  public void run(String[] args) {
+    initConfig();
+	parseArguments(args);
+    configFileName = config.getProperty(\"configFileName\");
+    loadConfig(configFileName);
+	parseArguments(args);
+    parseConfig();
+    log(App.class, LogLevel.INFO, \"End.\");
+  }
+  
+  private void initConfig() {
     // set default values
     config.setProperty(\"app.debug\", \"0\");
     config.setProperty(\"app.mode\", \"PROD\");
     config.setProperty(\"configFileName\", \"config.properties\");
-    // load values from configuration file
+  }
+
+  private void loadConfig(String fileName){
+      // load values from configuration file
     try {
       config.load(this.getClass().getResourceAsStream(fileName));
       // extract values
@@ -86,26 +99,26 @@ public class App {
     }
   }
 
-  private void parseConfiguration() {
+  private void parseConfig() {
     for (String key : config.stringPropertyNames()) {
       switch (key) {
-      case \"app.debug\", \"debug\" -> {
-        int debug = Integer.parseInt(config.getProperty(key));
-        log(App.class, LogLevel.INFO, \"- debug: %d\", debug);
-      }
-      case \"app.mode\", \"mode\", \"m\" -> {
-        this.mode = Mode.valueOf(config.getProperty(key).toUpperCase());
-        log(App.class, LogLevel.INFO, \"- mode: %s\", mode);
-      }
-      default -> {
+		  case \"app.debug\", \"debug\" -> {
+		    int debug = Integer.parseInt(config.getProperty(key));
+		    log(App.class, LogLevel.INFO, \"- debug: %d\", debug);
+		  }
+		  case \"app.mode\", \"mode\", \"m\" -> {
+		    this.mode = Mode.valueOf(config.getProperty(key).toUpperCase());
+		    log(App.class, LogLevel.INFO, \"- mode: %s\", mode);
+		  }
+		  default -> {
 
-      }
+		  }
       }
     }
   }
 
-  public void run(String[] args) {
-    for (String arg : args) {
+  private void parseArguments(String[] args){
+      for (String arg : args) {
       if (arg.contains(\"=\")) {
         String[] keyValue = arg.split(\"=\", 2);
         String key = keyValue[0];
@@ -114,10 +127,6 @@ public class App {
         log(App.class, LogLevel.INFO, \"Overridden config: %s=%s\", key, value);
       }
     }
-    configFileName = config.getProperty(\"configFileName\", \"config.properties\");
-    initConfig(configFileName);
-    parseConfiguration();
-    log(App.class, LogLevel.INFO, \"End.\");
   }
 
   public static void main(String[] args) {
@@ -135,8 +144,8 @@ public class App {
 }
 EOL
 # VS Code integration
-mkdir -p $1/.vscode
-cat <<EOL > $1/.vscode/settings.json
+mkdir -p ${app_name}/.vscode
+cat <<EOL > ${app_name}/.vscode/settings.json
 {
     \"java.format.settings.url\": \".vscode/java-formatter.xml\",
     \"java.project.sourcePaths\": [
@@ -150,11 +159,11 @@ cat <<EOL > $1/.vscode/settings.json
     \"java.project.outputPath\": \"target/classes\"
 }
 EOL
-cp ~/scripts/scripts-library/java-formatter.xml $1/.vscode/java-formatter.xml	
+cp ~/scripts/scripts-library/java-formatter.xml ${app_name}/.vscode/java-formatter.xml	
 
 # Add docs
-app_name=$1
-cat <<EOL > "$1/src/docs/00-preface.md"
+app_name=${app_name}
+cat <<EOL > "${app_name}/src/docs/00-preface.md"
 # Project ${app_name}
 
 ## Preface
@@ -167,11 +176,11 @@ You must rewrite this document according to your specifications.
 >docs in multiple format with the 'pandoc' tool. 
 EOL
 # Add build script
-cp ~/scripts/build-mini.sh $1/build
+cp ~/scripts/build-mini.sh ${app_name}/build
 # Add junit library
-curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit_version}/junit-platform-console-standalone-${junit_version}.jar >$1/libs/junit-platform-console-standalone-${junit_version}.jar
+curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit_version}/junit-platform-console-standalone-${junit_version}.jar >${app_name}/libs/junit-platform-console-standalone-${junit_version}.jar
 # create local git repository
 git init --initial-branch=main
-git -C "$1" add .
-git -C "$1" commit -m "Create the project '$1'"
-echo "Project '$1' created."
+git -C "${app_name}" add .
+git -C "${app_name}" commit -m "Create the project '${app_name}'"
+echo "Project '${app_name}' created."
