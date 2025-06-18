@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage:  script.sh <project_name>
+# Usage:  $0 <project_name>
 app_name=$1
 mkdir -p ${app_name}/{src/{{main,test}/{java,resources},docs},libs}
 echo "#README" >${app_name}/README.md
