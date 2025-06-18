@@ -3,21 +3,24 @@ export junit_version=1.12.2
 # create project folder structure
 mkdir -p $1/{src/{docs,{main,test}/{java,resources/i18n}},libs}
 # Add the README file
-echo """# README
+cat <<EOL > $1/README.md
+# README
 
 This is the readme file for the project $1
 
-That's all falk !
-""" > $1/README.md
+That's all folks !
+EOL
 # Add the internationalisation file
-echo """app.name=$1
+cat <<EOL > $1/src/main/resources/i18n/messages.properties
+app.name=$1
 app.version=0.0.1
 app.language=English
-""" > $1/src/main/resources/i18n/messages.properties
+EOL
 # Add the configuration file
-echo """app.debug=0
+cat <<EOL > $1/src/main/resources/config.properties
+app.debug=0
 app.mode=PROD
-""" > $1/src/main/resources/config.properties
+EOL
 # Add .gitignore
 echo """
 target/
@@ -32,7 +35,9 @@ target/
 *.swo
 """ > $1/.gitignore
 # Add main class
-echo """
+mkdir -p "$1/src/main/java/core"
+CAT <<EOL > "$1/src/main/java/core/App.java"
+package core;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Locale;
@@ -128,11 +133,10 @@ public class App {
     System.out.printf(\"%s;%s;[%s];%s%n\", ZonedDateTime.now(), level, className.getName(), message.formatted(args));
   }
 }
-
-""" > $1/src/main/java/App.java
+EOL
 # VS Code integration
 mkdir -p $1/.vscode
-echo """
+cat <<EOL > $1/.vscode/settings.json
 {
     \"java.format.settings.url\": \".vscode/java-formatter.xml\",
     \"java.project.sourcePaths\": [
@@ -145,12 +149,13 @@ echo """
     \"java.project.referencedLibraries\": [],
     \"java.project.outputPath\": \"target/classes\"
 }
-""" > $1/.vscode/settings.json
+EOL
 cp ~/scripts/scripts-library/java-formatter.xml $1/.vscode/java-formatter.xml	
 
 # Add docs
 app_name=$1
-echo """# Project ${app_name}
+cat <<EOL > "$1/src/docs/00-preface.md"
+# Project ${app_name}
 
 ## Preface
 
@@ -160,16 +165,13 @@ You must rewrite this document according to your specifications.
 >[!NOTE]
 >Please us the markdown text format to easily create 
 >docs in multiple format with the 'pandoc' tool. 
-
-""" > $1/src/docs/00-preface.md
+EOL
 # Add build script
 cp ~/scripts/build-mini.sh $1/build
 # Add junit library
 curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit_version}/junit-platform-console-standalone-${junit_version}.jar >$1/libs/junit-platform-console-standalone-${junit_version}.jar
 # create local git repository
-cd $1;
 git init --initial-branch=main
-git add .
-git commit -m "Create the project '$1'" 
+git -C "$1" add .
+git -C "$1" commit -m "Create the project '$1'"
 echo "Project '$1' created."
-

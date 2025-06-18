@@ -1,0 +1,135 @@
+#!/bin/bash
+
+# Fonction pour afficher l'utilisation du script
+usage() {
+    echo "Usage: $0 [-p <project_name>] [-j <java_version>] [-a <author_name>] [-e <author_email>] [-r <remote_repo_url>] [--help]"
+    echo ""
+    echo "Options:"
+    echo "  -p, --project <project_name>      Nom du projet à créer (par défaut: myapp)"
+    echo "  -j, --java <java_version>          Version de Java à utiliser (par défaut: 24-zulu)"
+    echo "  -a, --author-name <author_name>    Nom de l'auteur Git (par défaut: Default Author)"
+    echo "  -e, --author-email <author_email>  Email de l'auteur Git (par défaut: default@example.com)"
+    echo "  -r, --remote <remote_repo_url>     URL du dépôt distant pour le push (facultatif)"
+    echo "  --help                              Affiche cette aide"
+    echo ""
+    echo "Exemple:"
+    echo "  $0 -p mon_projet -j 17-zulu -a \"Jean Dupont\" -e \"jean.dupont@example.com\" -r \"https://github.com/username/repo.git\""
+    exit 1
+}
+
+# Valeurs par défaut
+PROJECT_NAME="myapp"
+JAVA_VERSION="24-zulu"
+GIT_AUTHOR_NAME="Default Author"
+GIT_AUTHOR_EMAIL="default@example.com"
+REMOTE_REPO_URL=""
+
+# Analyse des arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -p|--project)
+            PROJECT_NAME="$2"
+            shift 2
+            ;;
+        -j|--java)
+            JAVA_VERSION="$2"
+            shift 2
+            ;;
+        -a|--author-name)
+            GIT_AUTHOR_NAME="$2"
+            shift 2
+            ;;
+        -e|--author-email)
+            GIT_AUTHOR_EMAIL="$2"
+            shift 2
+            ;;
+        -r|--remote)
+            REMOTE_REPO_URL="$2"
+            shift 2
+            ;;
+        --help)
+            usage
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+# Création du projet
+mkdir -p "${PROJECT_NAME}"/{src/{{main,test}/{java,resources},docs},libs}
+echo "#README" > "${PROJECT_NAME}"/README.md
+echo "target/" > "${PROJECT_NAME}"/.gitignore
+echo "java=${JAVA_VERSION}" > "${PROJECT_NAME}"/.sdkmanrc
+curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.12.2/junit-platform-console-standalone-1.12.2.jar > "${PROJECT_NAME}"/libs/junit-platform-console-standalone-1.12.2.jar
+curl -sL https://gist.githubusercontent.com/mcgivrer/b95bf476b8494c180c0a386a5ae11264/raw/0618c582240ec4972fad844c884d28df086ab674/build > "${PROJECT_NAME}"/build
+
+# integrate VSCode support
+mkdir -p "${PROJECT_NAME}/.vscode";\
+cat <<EOL > "${PROJECT_NAME}/.vscode/settings.json"
+{
+    "java.format.settings.url": ".vscode/java-formatter.xml",
+    "java.project.sourcePaths": [
+        "src\\main\\java",
+        "src\\main\\resources",
+        "src\\test\\java",
+        "src\\test\\resources"
+    ],
+    "java.project.encoding": "warning",
+    "java.project.referencedLibraries": [
+        "libs\\junit-platform-console-standalone-1.12.2.jar"
+    ],
+    "java.project.outputPath": "target\\classes"
+}
+EOL
+cat <<EOL > "${PROJECT_NAME}/.vscode/launch.json"
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "App",
+            "projectName": "${PROJECT_NAME}_53c24221"
+        }
+    ]
+}
+EOL
+# create documentation
+cat <<EOL > "${PROJECT_NAME}"/src/docs/00-preface.md
+# Project ${PROJECT_NAME}
+
+## Preface
+
+This is the preface for the documentation of the project ${PROJECT_NAME}.
+You must rewrite this document according to your specifications.
+
+>[!NOTE]
+>Please us the markdown text format to easily create 
+>docs in multiple format with the 'pandoc' tool. 
+
+${GIT_AUTHOR_NAME} ${GIT_AUTHOR_EMAIL}
+EOL
+
+## create git repository
+git init -b main --quiet "${PROJECT_NAME}"/
+git -C "${PROJECT_NAME}" config user.name "${GIT_AUTHOR_NAME}"
+git -C "${PROJECT_NAME}" config user.email "${GIT_AUTHOR_EMAIL}"
+git -C "${PROJECT_NAME}" add .
+git -C "${PROJECT_NAME}" commit -m "Create Project ${PROJECT_NAME}"
+
+# Pousser vers le dépôt distant si l'URL est fournie
+if [[ -n "${REMOTE_REPO_URL}" ]]; then
+    git -C "${PROJECT_NAME}" remote add origin "${REMOTE_REPO_URL}"
+    git -C "${PROJECT_NAME}" push -f origin main
+fi
