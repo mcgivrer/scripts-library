@@ -47,7 +47,7 @@ echo """
  	  ],
 	\"java.project.outputPath\":\"target/classes\"
 }
-""" >.vscode/settings.json
+""" >${app_name}/.vscode/settings.json
 # build
 curl -sL https://gist.githubusercontent.com/mcgivrer/b95bf476b8494c180c0a386a5ae11264/raw/0618c582240ec4972fad844c884d28df086ab674/build >${app_name}/build
 # git repo
