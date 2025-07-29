@@ -1,4 +1,4 @@
-package ${PACKAGE_NAME};
+package ${PROJECT_PACKAGE_NAME};
 
 import java.time.ZonedDateTime;
 import java.util.Properties;
@@ -10,7 +10,7 @@ import java.util.ResourceBundle;
  * @author ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
  * @version ${APP_VERSION}
  */
-public class ${MAIN_CLASS_NAME}{
+public class ${PROJECT_MAIN_CLASS_NAME}{
 
 /**
  * The application modes.
@@ -49,8 +49,8 @@ public enum AppMode {
   /**
    * Creates a new instance of the application.
    */
-  public ${MAIN_CLASS_NAME}() {
-    info(${MAIN_CLASS_NAME}.class, "Create application '%s'", messages.getString("app.name"));
+  public ${PROJECT_MAIN_CLASS_NAME}() {
+    info(${PROJECT_MAIN_CLASS_NAME}.class, "Create application '%s'", messages.getString("app.name"));
   }
 
   /**
@@ -59,9 +59,9 @@ public enum AppMode {
    * @param args the command-line arguments
    */
   public void run(String[] args) {
-    info(${MAIN_CLASS_NAME}.class, "Application '%s' is running..", messages.getString("app.name"));
+    info(${PROJECT_MAIN_CLASS_NAME}.class, "Application '%s' is running..", messages.getString("app.name"));
     for (String arg : args) {
-      info(${MAIN_CLASS_NAME}.class, "", arg);
+      info(${PROJECT_MAIN_CLASS_NAME}.class, "", arg);
     }
     init(args);
     dispose();
@@ -73,7 +73,7 @@ public enum AppMode {
    * @param args the command-line arguments
    */
   private void init(String[] args) {
-    info(${MAIN_CLASS_NAME}.class, "Application '%s' is initializing.", messages.getString("app.name"));
+    info(${PROJECT_MAIN_CLASS_NAME}.class, "Application '%s' is initializing.", messages.getString("app.name"));
     // default values
     config.put("app.config.file", "/config.properties");
     config.put("app.debug", 0);
@@ -83,17 +83,17 @@ public enum AppMode {
       String[] kv = arg.split("=", 2);
       if (kv.length == 2) {
         config.put(kv[0], kv[1]);
-        info(${MAIN_CLASS_NAME}.class, "Set config from argument %s = %s", kv[0], kv[1]);
+        info(${PROJECT_MAIN_CLASS_NAME}.class, "Set config from argument %s = %s", kv[0], kv[1]);
       } else {
-        warn(${MAIN_CLASS_NAME}.class, "Invalid config argument: %s", arg);
+        warn(${PROJECT_MAIN_CLASS_NAME}.class, "Invalid config argument: %s", arg);
       }
-      info(${MAIN_CLASS_NAME}.class, "", arg);
+      info(${PROJECT_MAIN_CLASS_NAME}.class, "", arg);
     }
     // load configuration file
     try {
-      config.load(${MAIN_CLASS_NAME}.class.getResourceAsStream(config.getProperty("app.config.file")));
+      config.load(${PROJECT_MAIN_CLASS_NAME}.class.getResourceAsStream(config.getProperty("app.config.file")));
     } catch (Exception e) {
-      error(${MAIN_CLASS_NAME}.class, "Failed to load config file: %s", e.getMessage());
+      error(${PROJECT_MAIN_CLASS_NAME}.class, "Failed to load config file: %s", e.getMessage());
     }
     // extract configuration values
     parseConfiguration(config);
@@ -105,22 +105,22 @@ public enum AppMode {
    * @param config the configuration properties
    */
   private void parseConfiguration(Properties config) {
-    info(${MAIN_CLASS_NAME}.class, "Parsing configuration.");
+    info(${PROJECT_MAIN_CLASS_NAME}.class, "Parsing configuration.");
     for (String key : config.stringPropertyNames()) {
       String value = config.getProperty(key);
       switch (key) {
         case "app.debug":
           debug = Integer.parseInt(value);
-          info(${MAIN_CLASS_NAME}.class, "read config '%s' = '%s'", key, value);
+          info(${PROJECT_MAIN_CLASS_NAME}.class, "read config '%s' = '%s'", key, value);
           break;
         case "app.mode":
           mode = AppMode.valueOf(value.toUpperCase());
-          info(${MAIN_CLASS_NAME}.class, "read config '%s' = '%s'", key, value);
+          info(${PROJECT_MAIN_CLASS_NAME}.class, "read config '%s' = '%s'", key, value);
           break;
         default:
-          warn(${MAIN_CLASS_NAME}.class, "Unknown config key: %s", key);
+          warn(${PROJECT_MAIN_CLASS_NAME}.class, "Unknown config key: %s", key);
       }
-      info(${MAIN_CLASS_NAME}.class, "Config '%s' = '%s'", key, value);
+      info(${PROJECT_MAIN_CLASS_NAME}.class, "Config '%s' = '%s'", key, value);
     }
   }
 
@@ -128,14 +128,14 @@ public enum AppMode {
    * Disposes the application resources.
    */
   private void dispose() {
-    info(${MAIN_CLASS_NAME}.class, "Application '%s' is ending.", messages.getString("app.name"));
+    info(${PROJECT_MAIN_CLASS_NAME}.class, "Application '%s' is ending.", messages.getString("app.name"));
   }
 
   /**
    * The main entry point for the application.
    */
   public static void main(String[] args) {
-    ${MAIN_CLASS_NAME} app = new ${MAIN_CLASS_NAME}();
+    ${PROJECT_MAIN_CLASS_NAME} app = new ${PROJECT_MAIN_CLASS_NAME}();
     app.run(args);
   }
 

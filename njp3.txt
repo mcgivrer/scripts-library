@@ -58,6 +58,7 @@ export JAVA_VERSION="24-zulu"
 export APP_VERSION=0.0.1
 export GIT_AUTHOR_NAME="Default Author"
 export GIT_AUTHOR_EMAIL="default@example.com"
+export VENDOR_NAME="vendor name"
 export REMOTE_REPO_URL=""
 export PACKAGE_NAME="core"
 export MAIN_CLASS_NAME="App"
@@ -119,15 +120,15 @@ This project is ${PROJECT_NAME}.
 
 by ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
 
-""" > "${PROJECT_NAME}"/README.md
-echo "target/" > "${PROJECT_NAME}"/.gitignore
-echo "java=${JAVA_VERSION}" > "${PROJECT_NAME}"/.sdkmanrc
+""" | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}"/README.md
+echo "target/" | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}"/.gitignore
+echo "java=${JAVA_VERSION}" | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}"/.sdkmanrc
 curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.12.2/junit-platform-console-standalone-1.12.2.jar > "${PROJECT_NAME}"/libs/junit-platform-console-standalone-1.12.2.jar
 curl -sL https://gist.githubusercontent.com/mcgivrer/b95bf476b8494c180c0a386a5ae11264/raw/0618c582240ec4972fad844c884d28df086ab674/build > "${PROJECT_NAME}"/build
 
 # integrate VSCode support
 mkdir -p "${PROJECT_NAME}/.vscode";\
-cat <<EOL > "${PROJECT_NAME}/.vscode/settings.json"
+cat <<EOL | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}/.vscode/settings.json"
 {
     "java.format.settings.url": ".vscode/java-formatter.xml",
     "java.project.sourcePaths": [
@@ -143,7 +144,7 @@ cat <<EOL > "${PROJECT_NAME}/.vscode/settings.json"
     "java.project.outputPath": "target\\classes"
 }
 EOL
-cat <<EOL > "${PROJECT_NAME}/.vscode/launch.json"
+cat <<EOL | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}/.vscode/launch.json"
 {
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
@@ -167,7 +168,7 @@ cat <<EOL > "${PROJECT_NAME}/.vscode/launch.json"
 }
 EOL
 # create documentation
-cat <<EOL > "${PROJECT_NAME}"/src/docs/00-preface.md
+cat <<EOL | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}"/src/docs/00-preface.md
 # Project ${PROJECT_NAME}
 
 ## Preface
@@ -182,13 +183,13 @@ You must rewrite this document according to your specifications.
 ${GIT_AUTHOR_NAME} ${GIT_AUTHOR_EMAIL}
 EOL
 # create configuration file
-cat <<EOL > "${PROJECT_NAME}"/src/main/resources/config.properties
+cat <<EOL | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}"/src/main/resources/config.properties
 app.debug=0
 app.mode=DEVELOPMENT
 EOL
 # create translation file
 mkdir -p "${PROJECT_NAME}"/src/main/resources/i18n
-cat <<EOL > "${PROJECT_NAME}"/src/main/resources/i18n/messages.properties
+cat <<EOL | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}"/src/main/resources/i18n/messages.properties
 app.name=${PROJECT_NAME}
 app.version=1.0.0
 EOL
