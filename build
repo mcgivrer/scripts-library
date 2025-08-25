@@ -1,14 +1,24 @@
 #!/bin/bash
-# mini build script v1.2 (c) 2025 Frederic Delorme
+# mini build script v1.3 (c) 2025 Frederic Delorme
 #
-# Please adapt the `PROJECT_NAME`, `PROJECT_VERSION` and `MAIN_CLASS` variables to fit your own project.
-# The generated JARs will be named as target/build/[PROJECT_NAME]-[MAIN_CLASS]-[PROJECT_VERSION].jar
+# HISTORY:
+#
+# 2025-07-31 v1.3 : Update build script by adding help and release options.
+# 2025-06-03 v1.2 : Add Javadoc and sources package generation.
+#
+# USAGE:
+#
+# Please adapt the `PROJECT_NAME`, `PROJECT_VERSION` and `PROJECT_MAIN_CLASS_NAME` variables to fit your own project.
+# The generated JARs will be named as target/build/[PROJECT_NAME]-[PROJECT_MAIN_CLASS_NAME]-[PROJECT_VERSION].jar
+#
 # NOTE: `MAIN_CLASS` is a list of space-separated classes that generate as many JAR files as listed classes.
 # - Add external JAR dependencies (mostly in ./libs) by using the JARS variable.
 # e.g.: JARS="./libs/flexmark-all-0.64.8-lib.jar ./libs/org.eclipse.jgit-7.2.0.202503040940-r.jar"
 # - You can set some compulation options into COMPILATION_OPTS
 # - Define the java version SOURCE_VERSION variable
 # - Set default source encoding into SOURCE_ENCODING (default is UTF-8)
+#
+# EXAMPLES:
 #
 # to build your project:
 #
@@ -151,7 +161,7 @@ for arg in "${args[@]}"
 do
 	echo "execute command $arg:";
   case $arg in 
-    b | build)
+    b | --build)
       echo "build ..."
       echo "sources files:"
       find src/main/java src/main/resources -type f -name *.java
@@ -159,17 +169,17 @@ do
       javac -d target/classes -cp ${JARS// //;}:src/main/java:src/main/resources $(find src/main/java src/main/resources -type f -name *.java)
       cp -vr src/main/resources/* target/classes/
       ;;
-    c | clear)
+    c | --clear)
       echo "clean previous build..."
       rm -vrf target/
       mkdir -vp target/{build,classes}
       echo "done."
       echo ---
       ;;
-    d | doc)
+    d | --doc)
       generateJavadoc
       ;;
-    j | jar)
+    j | --jar)
     echo "build jar..."
       for app in ${MAIN_CLASS}
       do
@@ -180,7 +190,7 @@ do
         echo "done."
       done
       ;;
-    m | manifest)
+    m | --manifest)
       echo "create manifest ..."
       echo """Manifest-Version: ${PROJECT_NAME}
 Main-Class: ${MAIN_CLASS}
@@ -192,7 +202,7 @@ Implementation-Vendor: ${VENDOR_NAME}
 Implementation-Author: ${AUTHOR_NAME}
 """ >>target/MANIFEST.MF
       ;;
-    r | run | execute)
+    r | --run | --execute)
       echo "run ..."
         # Récupérer tous les arguments après l'option "r"
         shift # Supprime le premier argument (r)
@@ -203,11 +213,61 @@ Implementation-Author: ${AUTHOR_NAME}
         	java -cp ${JARS// //${FS}} $RUNTIME_OPTS -jar target/build/${PROJECT_NAME}-${MAIN_CLASS}-${PROJECT_VERSION}.jar "$@"
         fi
       ;;
-    s | src)
+    s | --src)
       generateSourceJar
       ;;
-    t | test)
+    t | --test)
       executeTests
+      ;;
+    re | --release)
+      echo "release ..."
+      mkdir -p ${TARGET}/release
+      tar -czvf ${TARGET}/release/${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz \
+       ${TARGET}/build ${TARGET}/${PROJECT_NAME}-${PROJECT_VERSION}-sources.jar \
+       ${TARGET}/${PROJECT_NAME}-${PROJECT_VERSION}-javadoc.jar
+      echo "Here is the release file ${TARGET}/release/${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz"
+      ;;
+    h | --help)
+      echo "$0 Usage"
+      echo "--------"
+      echo "the following commands are available:"
+      echo "  b  | --build     : Build the project"
+      echo "  c  | --clear     : Clean the build directory"
+      echo "  d  | --doc       : Generate Javadoc"
+      echo "  j  | --jar       : Create JAR files"
+      echo "  m  | --manifest  : Create a manifest file"
+      echo "  r  | --run       : Run the application"
+      echo "  s  | --src       : Generate source JAR"
+      echo "  t  | --test      : Execute tests"
+      echo "  re | --release   : Create a release package"
+      echo "  h  | --help      : Show this help message"
+      echo ""
+      echo "Usage examples"
+      echo ""
+      echo " Example 1:"
+      echo "     build"
+      echo " will execute all the following steps"
+      echo " - clean (c), "
+      echo " - build (b), "
+      echo " - create a manifest (m), "
+      echo " - create a jar(j) to `/target/build`,"
+      echo ""
+      echo " Example 2:"
+      echo "     build c b m j t d s"
+      echo " Will "
+      echo " - clean (c), "
+      echo " - build (b), "
+      echo " - create a manifest (m), "
+      echo " - create a jar(j) to `/target/build`,"
+      echo " - execute unit tests (t) from `src/test`,"
+      echo " - generate javadoc (d) to `/target`,"
+      echo " - generate sources jar (s) to `/target`."
+      echo ""
+      echo " Example 3:"
+      echo "     build r"
+      echo " will " 
+      echo " - run (r) the created JAR in `/target/build/[app_name]-[main_class]-[app_version].jar`."
+      echo "---"
       ;;
   esac;
 done

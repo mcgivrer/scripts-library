@@ -119,14 +119,69 @@ done
 
 # Création du projet
 mkdir -p "${PROJECT_APP_NAME}"/{src/{{main,test}/{java,resources},docs},libs}
+
 echo """
-# README
+# ${PROJECT_APP_NAME}
+
+**Version:** ${PROJECT_APP_VERSION}  
+**Author:** ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>  
+**Vendor:** ${PROJECT_VENDOR_NAME}
+
+## Description
 
 This project is ${PROJECT_APP_NAME}.
 
-by ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
+## Build
 
+To build the project, use the provided \`build\` script:
+
+\`\`\`bash
+./build
+\`\`\`
+
+Or for a full build with tests, docs, and sources:
+
+\`\`\`bash
+./build c b m j t d s
+\`\`\`
+
+- **c**: clean
+- **b**: build sources
+- **m**: create manifest
+- **j**: create JAR
+- **t**: run unit tests
+- **d**: generate Javadoc
+- **s**: generate sources JAR
+
+## Run
+
+After building, run the application with:
+
+\`\`\`bash
+./build r
+\`\`\`
+
+The generated JAR will be in \`target/build/${PROJECT_APP_NAME}-${PROJECT_PACKAGE_NAME}.${PROJECT_MAIN_CLASS_NAME}-${PROJECT_APP_VERSION}.jar\`.
+
+## Project Structure
+
+- \`src/main/java\`: Application sources
+- \`src/main/resources\`: Resources
+- \`src/test/java\`: Test sources
+- \`src/test/resources\`: Test resources
+- \`libs\`: External libraries
+- \`target\`: Build output
+
+## Requirements
+
+- Java ${PROJECT_JAVA_VERSION}
+- Bash, Git
+
+---
+
+by ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
 """ | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/README.md
+
 echo "target/" | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/.gitignore
 echo "java=${PROJECT_JAVA_VERSION}" | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/.sdkmanrc
 curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.12.2/junit-platform-console-standalone-1.12.2.jar > "${PROJECT_APP_NAME}"/libs/junit-platform-console-standalone-1.12.2.jar
@@ -213,9 +268,9 @@ EOL
 mkdir -p "${PROJECT_APP_NAME}"/src/main/java/${PROJECT_PACKAGE_NAME//.//}
 # Générer le fichier en utilisant envsubst
 if [[ -n "${FRAME}" ]]; then
-    envsubst < ~/scripts/templates/App03_Frame_template.java | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/src/main/java/${PROJECT_PACKAGE_NAME//.//}/${PROJECT_MAIN_CLASS_NAME}.java
+    envsubst < ~/scripts/templates/Application_Frame_template.java | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/src/main/java/${PROJECT_PACKAGE_NAME//.//}/${PROJECT_MAIN_CLASS_NAME}.java
 else
-    envsubst < ~/scripts/templates/App03_template.java | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/src/main/java/${PROJECT_PACKAGE_NAME//.//}/${PROJECT_MAIN_CLASS_NAME}.java
+    envsubst < ~/scripts/templates/Application_template.java | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/src/main/java/${PROJECT_PACKAGE_NAME//.//}/${PROJECT_MAIN_CLASS_NAME}.java
 fi
 
 ## create git repository
