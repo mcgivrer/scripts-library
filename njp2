@@ -1,14 +1,62 @@
 #!/bin/bash
 # New Java project script generation
-# Version: 1.0
+# Version: 1.1
 # Author: Frédéric Delorme <frederic.delorme@gmail.com>
-# Date: 2025-07-25
+# Date: 2025-08-29
 # 
 # This script creates a new Java project with a specified structure,
 # including directories for source code, resources, tests, and documentation.
 # It also initializes a Git repository, sets up a README file, and configures
 # the project for use with VSCode and SDKMAN.
 # This script is designed to be run in a Unix-like environment with bash.
+#
+# TEMPLATE DOCUMENTATION
+# ======================
+# This script supports generating Java application classes using customizable templates. Two main templates are provided:
+# 
+# App_template.java: A minimal application class with configuration, logging, and internationalization support.
+# App_Frame_template.java: An extended version with a graphical window (JFrame), event handling, and drawing utilities.
+# 
+# But you can provide your own template with the -t,--template <MY_OWN_TEMPLATE> option in the CLI.
+#
+# Templating Workflow
+# -------------------
+# Template Variables
+#
+# The templates use placeholders such as 
+#  - ${PROJECT_PACKAGE_NAME}, 
+#  - ${PROJECT_MAIN_CLASS_NAME}, 
+#  - ${PROJECT_NAME}, 
+#  - ${GIT_AUTHOR_NAME}, 
+#  - ${GIT_AUTHOR_EMAIL}, 
+#  - and ${PROJECT_APP_VERSION}.
+#
+# These are replaced by the script with project-specific values.
+# 
+# Class Generation
+# ----------------
+# The script reads the selected template.
+# It substitutes all placeholders with actual values from the project configuration or user input.
+# The resulting Java file is saved in the appropriate package directory.
+#
+# ! Limitation  !
+# The template engine is very simple and very limited, it will only replace tokens with values. No Loop, no confition.
+#  
+# Features
+# --------
+# App_template.java:
+#  - Basic application lifecycle (init, run, dispose)
+#  - Config file loading and argument parsing
+#  - Logging (info, warn, debug, error)
+#  - Internationalization via ResourceBundle
+# App_Frame_template.java:
+#  - All features of App_template.java
+#  - GUI window creation (JFrame)
+#  - Keyboard event handling
+#  - Double-buffered rendering and text drawing utilities
+#
+# Happy Coding !
+# McG.
 #
 # MIT License
 # 
@@ -34,30 +82,44 @@
 
 # Fonction pour afficher l'utilisation du script
 usage() {
-    echo "Usage: $0 [-p <project_name>] [-j <java_version>] [-a <author_name>] [-e <author_email>] [-r <remote_repo_url>] [-f|--frame] [--help]"
+    echo "Usage: $0 [-p <project_name>] [-j <java_version>] [-a <author_name>] [-e <author_email>] [-r <remote_repo_url>] [-f|--frame]  ..." 
     echo ""
     echo "Options:"
-    echo "  -n, --name <application_name>       Nom de l'application (par défault, le nom du projet)"
-    echo "  -p, --project <project_name>        Nom du projet à créer (par défaut: myapp)"
-    echo "  -j, --java <java_version>           Version de Java à utiliser (par défaut: 24-zulu)"
-    echo "  -a, --author-name <author_name>     Nom de l'auteur Git (par défaut: Default Author)"
-    echo "  -e, --author-email <author_email>   Email de l'auteur Git (par défaut: default@example.com)"
-    echo "  -r, --remote <remote_repo_url>      URL du dépôt distant pour le push (facultatif)"
-    echo "  -pk, --package <PROJECT_PACKAGE_NAME>       Nom du package (par défaut: core)"
-    echo "  -mc, --main-class <PROJECT_MAIN_CLASS_NAME> Nom de la classe principale (par défaut: App)"
-    echo "  -f, --frame                         Crée une application avec une fenêtre (par défaut: non)"
-    echo "  -t, --template <App_CLASS_TEMPLATE> Chemin vers le modèle de l'application (facultatif)"
-    echo "  --help                              Affiche cette aide"
+    echo " -p, --project <project_name>                Project name to create (default: myapp)"
+    echo " -n, --name <application_name>               Application name (default: capitalized project name)"
+    echo " -j, --java <java_version>                   Java version to use (default: 24-zulu)"
+    echo " -a, --author-name <author_name>             Git author name (default: Default Author)"
+    echo " -e, --author-email <author_email>           Git author email (default: default@example.com)"
+    echo " -r, --remote <remote_repo_url>              Remote repository URL for push (optional)"
+    echo " -pk, --package <PROJECT_PACKAGE_NAME>       Package name (default: core)"
+    echo " -mc, --main-class <PROJECT_MAIN_CLASS_NAME> Main class name (default: App)"
+    echo " -f, --frame                                 Create an application with a window (default: no)"
+    echo " -t, --template <App_CLASS_TEMPLATE>         Path to the application template (optional)"
+    echo " -vd,--vendorname <VENDOR_NAME>              Vendor name (default: Vendor_name)"
+    echo " -h,-?,--help                                Show this help"
     echo ""
-    echo "Exemple:"
-    echo "  $0 -p mon_projet -j 17-zulu -a \"Jean Dupont\" -e \"jean.dupont@example.com\" -r \"https://github.com/username/repo.git\" -pk \"core\" -mc \"App\" -f"
+    echo "Example:"
+    echo ""
+    echo "$0 -p my_project -n MyProject -j 17-zulu \\"
+    echo " -a \"John Doe\" -e \"john.doe@mymail.com\" \\"
+    echo " -r \"https://github.com/jdoe/my_git_project.git\" \\"
+    echo " -pk \"com.core.demo\" -mc \"ApplicationDemo\" \\"
+    echo " -f -vd MyOwnCompany"
+    echo ""
+    echo "This command line will create a java project based on java 17, "
+    echo "named 'my_project' containing a main class 'com.core.demo.ApplicationDemo'"
+    echo "with a JFrame application and the application name displayed will be 'MyProject'."
+    echo "---"
+    echo ""
     exit 1
 }
 
 # Valeurs par défaut
+export APPLICATION_NAME=
 export PROJECT_NAME="myapp"
 export JAVA_VERSION="24-zulu"
 export PROJECT_APP_VERSION=0.0.1
+export PROJECT_VENDOR_NAME="vendor_name"
 export GIT_AUTHOR_NAME="Default Author"
 export GIT_AUTHOR_EMAIL="default@example.com"
 export REMOTE_REPO_URL=""
@@ -73,9 +135,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         -p|--project)
             PROJECT_NAME="$2"
-            if [[ -n $APPLICATION_NAME ]]; then
+            if [[ -n "${APPLICATION_NAME}" ]]; then
                # Application's name will be project's name capitalized.
-               APPLICATION_NAME=${PROJECT_NAME^};
+               export APPLICATION_NAME=${PROJECT_NAME^};
             fi
             shift 2
             ;;
@@ -99,6 +161,10 @@ while [[ $# -gt 0 ]]; do
             PROJECT_PACKAGE_NAME="$2"
             shift 2
             ;;
+        -mc|--main-class)
+            PROJECT_MAIN_CLASS_NAME="$2"
+            shift 2
+            ;;
         -f|--frame)
             FRAME=true
             shift 1
@@ -107,15 +173,15 @@ while [[ $# -gt 0 ]]; do
             APP_TEMPLATE="$2"
             shift 2
             ;;        
-        -mc|--main-class)
-            PROJECT_MAIN_CLASS_NAME="$2"
-            shift 2
-            ;;
         -v|--version)
             PROJECT_APP_VERSION="$2"
             shift 2
             ;;
-        --help)
+        -vd|--vendorname)
+            PROJECT_VENDOR_NAME="$2"
+            shift 2
+            ;;
+        -\?|-h|--help)
             usage
             ;;
         *)
@@ -129,7 +195,7 @@ mkdir -p "${PROJECT_NAME}"/{src/{{main,test}/{java,resources},docs},libs}
 echo """
 # README
 
-This project is ${PROJECT_NAME}.
+This project is ${PROJECT_NAME} containing the application ${APPLICATION_NAME}.
 
 by ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
 
@@ -137,7 +203,16 @@ by ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
 echo "target/" > "${PROJECT_NAME}"/.gitignore
 echo "java=${JAVA_VERSION}" > "${PROJECT_NAME}"/.sdkmanrc
 curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.12.2/junit-platform-console-standalone-1.12.2.jar > "${PROJECT_NAME}"/libs/junit-platform-console-standalone-1.12.2.jar
-curl -sL https://gist.githubusercontent.com/mcgivrer/b95bf476b8494c180c0a386a5ae11264/raw/0618c582240ec4972fad844c884d28df086ab674/build > "${PROJECT_NAME}"/build
+curl -sL https://gist.githubusercontent.com/mcgivrer/b95bf476b8494c180c0a386a5ae11264/raw/ > "${PROJECT_NAME}"/build
+
+# updating build script with project details
+sed -i "s/\[PROJECT_APP_NAME\]/${APPLICATION_NAME}/g" "${PROJECT_NAME}"/build
+sed -i "s/\[PROJECT_APP_VERSION\]/${PROJECT_APP_VERSION}/g" "${PROJECT_NAME}"/build
+sed -i "s/\[PROJECT_PACKAGE_NAME\]/${PROJECT_PACKAGE_NAME}/g" "${PROJECT_NAME}"/build
+sed -i "s/\[PROJECT_MAIN_CLASS_NAME\]/${PROJECT_MAIN_CLASS_NAME}/g" "${PROJECT_NAME}"/build
+sed -i "s/\[PROJECT_VENDOR_NAME\]/${PROJECT_VENDOR_NAME}/g" "${PROJECT_NAME}"/build
+sed -i "s/\[GIT_AUHTOR_NAME\]/${GIT_AUTHOR_NAME}/g" "${PROJECT_NAME}"/build
+sed -i "s/\[GIT_AUHTOR_EMAIL\]/${GIT_AUTHOR_EMAIL}/g" "${PROJECT_NAME}"/build
 
 # integrate VSCode support
 mkdir -p "${PROJECT_NAME}/.vscode";\
@@ -157,6 +232,7 @@ cat <<EOL > "${PROJECT_NAME}/.vscode/settings.json"
     "java.project.outputPath": "target\\classes"
 }
 EOL
+
 cat <<EOL > "${PROJECT_NAME}/.vscode/launch.json"
 {
     // Use IntelliSense to learn about possible attributes.
@@ -180,6 +256,7 @@ cat <<EOL > "${PROJECT_NAME}/.vscode/launch.json"
     ]
 }
 EOL
+
 # create documentation
 cat <<EOL > "${PROJECT_NAME}"/src/docs/00-preface.md
 # Project ${PROJECT_NAME}
@@ -195,27 +272,31 @@ You must rewrite this document according to your specifications.
 
 ${GIT_AUTHOR_NAME} ${GIT_AUTHOR_EMAIL}
 EOL
+
 # create configuration file
 cat <<EOL > "${PROJECT_NAME}"/src/main/resources/config.properties
 app.debug=0
 app.mode=DEVELOPMENT
 EOL
+
 # create translation file
 mkdir -p "${PROJECT_NAME}"/src/main/resources/i18n
 cat <<EOL > "${PROJECT_NAME}"/src/main/resources/i18n/messages.properties
-app.name=${PROJECT_NAME}
-app.version=1.0.0
+app.name=${APPLICATION_NAME} (${PROJECT_APP_VERSION})
+app.version=${PROJECT_APP_VERSION}
 EOL
+
 # Générer le fichier en utilisant envsubst
 if [[ -n "${FRAME}" ]]; then
     cat <<EOL >> "${PROJECT_NAME}/src/main/resources/i18n/messages.properties"
-app.message.welcome=Welcome into this Application demo
+app.message.welcome=Welcome into ${APPLICATION_NAME}
 app.message.exit=Press the [ESCAPE] key to exit...
 EOL
 fi
-# create a basic application class into a core package.
 
+# create a basic application class into a core package.
 mkdir -p "${PROJECT_NAME}"/src/main/java/${PROJECT_PACKAGE_NAME//.//}
+
 # Générer le fichier en utilisant envsubst
 if [[ -n "${FRAME}" ]]; then
     envsubst < ~/scripts/templates/App_Frame_template.java | iconv -f UTF-8 -t UTF-8 > "${PROJECT_NAME}"/src/main/java/${PROJECT_PACKAGE_NAME//.//}/${PROJECT_MAIN_CLASS_NAME}.java
