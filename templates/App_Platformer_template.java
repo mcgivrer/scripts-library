@@ -1,4 +1,4 @@
-package ${PACKAGE_NAME};
+package ${PROJECT_PACKAGE_NAME};
 
 import java.awt.Color;
 import java.awt.Font;
@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
- * ${MAIN_CLASS_NAME} serves as a basic demonstration of how to build a graphical application
+ * ${PROJECT_MAIN_CLASS_NAME} serves as a basic demonstration of how to build a graphical application
  * using Java AWT and manage a custom rendering loop with double buffering.
  * This application displays the elapsed time in a `Frame` window with support for
  * basic keyboard interaction to terminate the program.
@@ -36,9 +36,9 @@ import java.util.stream.Collectors;
  * Implements the `KeyListener` interface to handle keyboard events for user interaction.
  *
  * @author ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
- * @version ${APP_VERSION}
+ * @version ${PROJECT_APP_VERSION}
  */
-public class ${MAIN_CLASS_NAME} implements KeyListener {
+public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
 
     /**
      * Represents a generic behavior that can be applied to an entity in the application.
@@ -50,16 +50,16 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
      * @param <Entity> the type of entity to which this behavior is applied
      */
     public interface Behavior<Entity> {
-        default void init(${MAIN_CLASS_NAME} app, Entity e) {
+        default void init(${PROJECT_MAIN_CLASS_NAME} app, Entity e) {
         }
 
-        default void update(${MAIN_CLASS_NAME} app, long elapsed, Entity e) {
+        default void update(${PROJECT_MAIN_CLASS_NAME} app, long elapsed, Entity e) {
         }
 
-        default void draw(${MAIN_CLASS_NAME} app, Graphics2D g, Entity e) {
+        default void draw(${PROJECT_MAIN_CLASS_NAME} app, Graphics2D g, Entity e) {
         }
 
-        default void dispose(${MAIN_CLASS_NAME} app, Entity e) {
+        default void dispose(${PROJECT_MAIN_CLASS_NAME} app, Entity e) {
         }
     }
 
@@ -256,10 +256,10 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
         public void drawDebug(Graphics2D g) {
             g.setColor(Color.ORANGE);
             g.setFont(g.getFont().deriveFont(Font.BOLD, 8.5f));
-            if (${MAIN_CLASS_NAME}.debug > 0) {
+            if (${PROJECT_MAIN_CLASS_NAME}.debug > 0) {
                 int ix = 0;
                 for (String s : getDebugInfo()) {
-                    if (${MAIN_CLASS_NAME}.debug > ix) {
+                    if (${PROJECT_MAIN_CLASS_NAME}.debug > ix) {
                         g.drawString(s,
                                 (int) (x + width + 4),
                                 (int) (y + height - (g.getFontMetrics().getHeight() * ix++)));
@@ -481,7 +481,7 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
         }
 
         @Override
-        public void init(${MAIN_CLASS_NAME} app, Entity entity) {
+        public void init(${PROJECT_MAIN_CLASS_NAME} app, Entity entity) {
             if (!entity.getMaterial().isFluid()) {
                 throw new IllegalArgumentException("WaveBehavior can only be applied to fluid entities");
             }
@@ -509,7 +509,7 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
         }
 
         @Override
-        public void update(${MAIN_CLASS_NAME} app, long elapsed, Entity entity) {
+        public void update(${PROJECT_MAIN_CLASS_NAME} app, long elapsed, Entity entity) {
             time += elapsed * 0.001; // Convert to seconds
 
             // Update wave equation
@@ -636,7 +636,7 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
             }
         }
 
-        private void checkEntityInteractions(${MAIN_CLASS_NAME} app, Entity fluidEntity) {
+        private void checkEntityInteractions(${PROJECT_MAIN_CLASS_NAME} app, Entity fluidEntity) {
             // Check interactions with other dynamic entities
             app.entities.stream()
                     .filter(e -> e != fluidEntity &&
@@ -656,7 +656,7 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
         }
 
         @Override
-        public void draw(${MAIN_CLASS_NAME} app, Graphics2D g, Entity entity) {
+        public void draw(${PROJECT_MAIN_CLASS_NAME} app, Graphics2D g, Entity entity) {
             if (surfacePoints.isEmpty()) return;
 
             // Draw wave surface
@@ -698,7 +698,7 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
         }
 
         @Override
-        public void dispose(${MAIN_CLASS_NAME} app, Entity entity) {
+        public void dispose(${PROJECT_MAIN_CLASS_NAME} app, Entity entity) {
             // Clean up resources
             heightMap = null;
             velocityMap = null;
@@ -817,11 +817,11 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
     private final boolean[] keys = new boolean[1024];
 
     /**
-     * Initializes a new instance of the ${MAIN_CLASS_NAME} class and starts the application.
+     * Initializes a new instance of the ${PROJECT_MAIN_CLASS_NAME} class and starts the application.
      * This constructor serves as the entry point for initializing basic setup and logging
      * the application's start.
      */
-    public ${MAIN_CLASS_NAME}() {
+    public ${PROJECT_MAIN_CLASS_NAME}() {
         System.out.println("Start test Application...");
     }
 
@@ -877,7 +877,7 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
                 .setMass(70.0)
                 .add(new Behavior<Entity>() {
                     @Override
-                    public void update(${MAIN_CLASS_NAME} app, long elapsed, Entity e) {
+                    public void update(${PROJECT_MAIN_CLASS_NAME} app, long elapsed, Entity e) {
                         double forceStrength = 5000.0; // Force en Newtons
                         if (isKeyPressed(KeyEvent.VK_LEFT)) {
                             e.apply(new Point2D.Double(-forceStrength * 10, 0));
@@ -1795,7 +1795,7 @@ public class ${MAIN_CLASS_NAME} implements KeyListener {
 
 
     public static void main(String[] args) {
-        ${MAIN_CLASS_NAME} app = new ${MAIN_CLASS_NAME}();
+        ${PROJECT_MAIN_CLASS_NAME} app = new ${PROJECT_MAIN_CLASS_NAME}();
         app.run(args);
     }
 
