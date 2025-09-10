@@ -25,7 +25,7 @@ import javax.swing.JFrame;
  * @author Frederic Delorme <frederic.delorme@gmail.com>
  * @version 1.0.0
  */
-public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
+public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener{
 
   /**
    * The ${PROJECT_MAIN_CLASS_NAME} modes.
@@ -56,6 +56,9 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   public class CircularQueue<E> extends LinkedList<E> {
     private final int capacity;
 
+    /**
+     * Creates a new CircularQueue with the specified capacity.
+     */
     public CircularQueue(int capacity) {
       this.capacity = capacity;
     }
@@ -80,6 +83,10 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
 
     public float dx;
     public float dy;
+
+    public float friction = 1.0f;
+    public float elasticity = 1.0f;
+    public float mass = 1.0f;
 
     public int width;
     public int height;
@@ -235,6 +242,39 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
       return this;
     }
 
+    /**
+     * Set the Elasticity physic factor.
+     * 
+     * @param e the elasticity factor (from 0.0f to 1.0f)
+     * @return the updated Entity.
+     */
+    public Entity setElasticity(float e) {
+      this.elasticity = e;
+      return this;
+    }
+
+    /**
+     * Set the Friction physic factor.
+     * 
+     * @param f the friction factor (from 0.0f to 1.0f)
+     * @return the updated Entity.
+     */
+    public Entity setFriction(float f) {
+      this.friction = f;
+      return this;
+    }
+
+    /**
+     * Set the Entity mass.
+     * 
+     * @param m the mass factor (1.0f to ...)
+     * @return the updated Entity.
+     */
+    public Entity setMass(float m) {
+      this.mass = m;
+      return this;
+    }
+
   }
 
   /**
@@ -275,21 +315,45 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
     public void clamp(Entity e) {
       if (e.x < this.x) {
         e.x = this.x;
+        e.dx = -e.dx * e.elasticity;
       } else if (e.x + e.width > this.x + this.width) {
         e.x = this.x + this.width - e.width;
+        e.dx = -e.dx * e.elasticity;
       }
       if (e.y < this.y) {
         e.y = this.y;
+        e.dy = -e.dy * e.elasticity;
       } else if (e.y + e.height > this.y + this.height) {
         e.y = this.y + this.height - e.height;
+        e.dy = -e.dy * e.elasticity;
+
       }
     }
 
+    /**
+     * Specific drawing process for the World
+     * 
+     * @param g the Graphics2D API instance.
+     */
     @Override
     public void draw(Graphics2D g) {
-      super.draw(g);
+      g.setColor(fillColor);
+      g.fillRect((int) -(this.width + x), (int) (-this.height + y), this.width * 3, this.height * 2);
       g.setColor(colorGround);
-      g.fillRect(-this.width, this.height, this.width * 3, this.height);
+      g.fillRect((int) -(this.width + x), (int) (this.height + y), this.width * 3, this.height);
+      g.setColor(color);
+      g.drawRect((int) x, (int) (y), this.width, this.height);
+    }
+
+    /**
+     * Set world Gravity factor.
+     * 
+     * @param g
+     * @return
+     */
+    public World setGravity(float g) {
+      this.gravity = g;
+      return this;
     }
 
   }
@@ -361,9 +425,11 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   }
 
   /**
-   * Runs the ${PROJECT_MAIN_CLASS_NAME}.
-   *
-   * @param args the command-line arguments
+   * Runs the ${PROJECT_MAIN_CLASS_NAME} with the specified command-line arguments.
+   * This method initializes the application, enters the main loop, and
+   * disposes of resources when exiting.
+   * 
+   * @param args the command-line arguments to pass to the ${PROJECT_MAIN_CLASS_NAME}
    */
   public void run(String[] args) {
     info(${PROJECT_MAIN_CLASS_NAME}.class, "${PROJECT_MAIN_CLASS_NAME} '%s' is running..", messages.getString("app.name"));
@@ -375,6 +441,11 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
     dispose();
   }
 
+  /**
+   * The main application loop.
+   * This method initializes the application, loads resources, creates entities,
+   * and enters the update-render loop until the exit flag is set.
+   */
   public void loop() {
     initialize();
     load();
@@ -382,10 +453,22 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
     do {
       update();
       render();
+      try {
+        Thread.sleep(60 / 1000);
+      } catch (InterruptedException e) {
+        error(${PROJECT_MAIN_CLASS_NAME}.class, "Unable to wait for %d ms: %s", 60 / 1000, e.getMessage());
+      }
     } while (!exit);
     dispose();
   }
 
+  /**
+   * Initializes the ${PROJECT_MAIN_CLASS_NAME} window and sets up the game world.
+   * If a window already exists, it is disposed of before creating a new one.
+   * The window is configured with a title, size, and key listener, and a buffer
+   * strategy is created for smooth rendering.
+   * The game world size is set to match the window dimensions.
+   */
   public void initialize() {
     if (window != null) {
       window.dispose();
@@ -394,50 +477,70 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
     window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     window.setPreferredSize(new Dimension(800, 600));
     window.addKeyListener(this);
+    window.setLocationByPlatform(true);
     window.pack();
     window.setVisible(true);
     window.createBufferStrategy(3);
     world.setSize(window.getWidth(), window.getHeight());
   }
 
+  /**
+   * Loads the resources needed for the ${PROJECT_MAIN_CLASS_NAME}.
+   * This method is a placeholder for loading images, sounds, and other assets.
+   */
   private void load() {
     // load every resource you may need.
   }
 
+  /**
+   * Creates the initial entities and game objects for the ${PROJECT_MAIN_CLASS_NAME}.
+   * This method sets up the game world and adds a player entity with basic
+   * behaviors for movement and gravity.
+   */
   private void create() {
     entities.add(
         world
+            .setGravity(0.981f)
             .setSize((int) (window.getWidth() * 0.75), (int) (window.getHeight() * 0.75))
             .setPosition((int) (window.getWidth() * 0.125), (int) (window.getHeight() * 0.125)));
     // Create contextual scene.
     entities.add(
         new Entity("player", window.getWidth() / 2, window.getHeight() / 2, 24, 32)
-            .setColor(Color.WHITE)
-            .setFillColor(Color.GREEN)
+            .setColor(Color.BLACK)
+            .setFillColor(Color.BLUE)
+            .setFriction(0.98f)
+            .setElasticity(0.95f)
+            .setMass(20.0f)
             .addBehavior(e -> {
               float speed = 0.3f;
-              float friction = 0.98f;
 
               if (isKeyPressed(KeyEvent.VK_LEFT)) {
                 e.dx = -speed;
               } else if (isKeyPressed(KeyEvent.VK_RIGHT)) {
                 e.dx = speed;
               } else {
-                e.dx = e.dx * 0.98f;
+                e.dx = e.dx * e.friction;
               }
               if (isKeyPressed(KeyEvent.VK_UP)) {
                 e.dy = -speed;
               } else if (isKeyPressed(KeyEvent.VK_DOWN)) {
                 e.dy = speed;
               } else {
-                e.dy = e.dy * friction;
+                e.dy = e.dy * e.friction;
               }
             })
             .addBehavior(e -> {
-              e.dy += world.gravity * .005f;
+              e.dy += world.gravity / e.mass;
             }));
   }
 
+  /**
+   * Updates the state of all entities in the game.
+   * Each entity's update method is called, and if an entity goes out of the
+   * world bounds, it is clamped back within the world.
+   * This method is called in the main application loop to ensure that the game
+   * state is consistently updated.
+   */
   public void update() {
     for (Entity e : entities) {
       e.update();
@@ -447,6 +550,12 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
     }
   }
 
+  /**
+   * Renders the current state of the game to the window.
+   * This method prepares the drawing context, clears the window,
+   * draws all entities, and displays the current score and life count.
+   * Finally, it switches the buffer to show the rendered frame.
+   */
   public void render() {
     // prepare drawing graphics API
     BufferStrategy bf = window.getBufferStrategy();
@@ -482,9 +591,11 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   }
 
   /**
-   * Initializes the ${PROJECT_MAIN_CLASS_NAME}.
-   *
-   * @param args the command-line arguments
+   * Initializes the ${PROJECT_MAIN_CLASS_NAME} configuration.
+   * This method sets default configuration values, parses command-line
+   * arguments, and loads additional configuration from a properties file.
+   * 
+   * @param args the command-line arguments to parse for configuration settings
    */
   private void init(String[] args) {
     info(${PROJECT_MAIN_CLASS_NAME}.class, "${PROJECT_MAIN_CLASS_NAME} '%s' is initializing.", messages.getString("app.name"));
@@ -514,9 +625,14 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   }
 
   /**
-   * Parses the ${PROJECT_MAIN_CLASS_NAME} configuration.
-   *
-   * @param config the configuration properties
+   * Parses the configuration properties and sets the corresponding fields.
+   * This method reads the configuration keys and updates the debug level and
+   * application mode accordingly.
+   * Unknown configuration keys are logged as warnings.
+   * 
+   * @param config the Properties object containing configuration key-value pairs
+   * @see #debug
+   * @see #mode
    */
   private void parseConfiguration(Properties config) {
     info(${PROJECT_MAIN_CLASS_NAME}.class, "Parsing configuration.");
@@ -539,7 +655,9 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   }
 
   /**
-   * Disposes the ${PROJECT_MAIN_CLASS_NAME} resources.
+   * Disposes of the ${PROJECT_MAIN_CLASS_NAME} resources and closes the window.
+   * This method is called when the application is exiting to ensure that
+   * resources are properly released and the window is closed.
    */
   private void dispose() {
     if (Optional.ofNullable(window).isPresent()) {
@@ -551,6 +669,10 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
 
   /**
    * The main entry point for the ${PROJECT_MAIN_CLASS_NAME}.
+   * Creates an instance of ${PROJECT_MAIN_CLASS_NAME} and runs it with the provided command-line
+   * arguments.
+   * 
+   * @param args the command-line arguments to pass to the ${PROJECT_MAIN_CLASS_NAME}
    */
   public static void main(String[] args) {
     ${PROJECT_MAIN_CLASS_NAME} app = new ${PROJECT_MAIN_CLASS_NAME}();
@@ -626,14 +748,35 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
     return debug < level;
   }
 
+  /**
+   * KeyListener implementation to handle key events.
+   * Key events are added to a circular queue for later processing.
+   */
+  @Override
   public void keyTyped(KeyEvent ke) {
     keyEvents.add(ke);
   }
 
+  /**
+   * Key pressed event handler.
+   * Sets the corresponding key state to true in the keys array.
+   * 
+   * @param ke the KeyEvent object representing the key press event
+   */
+  @Override
   public void keyPressed(KeyEvent ke) {
     keys[ke.getKeyCode()] = true;
   }
 
+  /**
+   * Key released event handler.
+   * Sets the corresponding key state to false in the keys array.
+   * Handles specific key releases for actions like exiting the app,
+   * toggling debug levels, and reinitializing or reloading the app.
+   * 
+   * @param ke the KeyEvent object representing the key release event
+   */
+  @Override
   public void keyReleased(KeyEvent ke) {
     keys[ke.getKeyCode()] = false;
     switch (ke.getKeyCode()) {
@@ -663,19 +806,30 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   }
 
   /**
-   * Return keyCode status
+   * Check if a specific key is currently pressed.
    * 
-   * @param keyCode KeyEvent code
-   * @return true if the Key corresponding to the keyCode is pressed.
+   * @param keyCode the key code to check (e.g., KeyEvent.VK_A)
+   * @return true if the key is pressed, false otherwise
    */
   public boolean isKeyPressed(int keyCode) {
     return keys[keyCode];
   }
 
+  /**
+   * Reset the key events stack.
+   * This method clears all stored key events from the circular queue.
+   */
   public void resetKeyEventsStack() {
     keyEvents.clear();
   }
 
+  /**
+   * Poll the last key event from the circular queue.
+   * This method retrieves and removes the most recent key event,
+   * or returns null if the queue is empty.
+   * 
+   * @return the last KeyEvent, or null if the queue is empty
+   */
   public KeyEvent pollLastKeyEvent() {
     return keyEvents.pollLast();
   }
