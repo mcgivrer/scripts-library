@@ -20,313 +20,34 @@ import java.util.ResourceBundle;
 import javax.swing.JFrame;
 
 /**
- * The main ${PROJECT_MAIN_CLASS_NAME} class for project demo004.
+ * The main Platformer class for project demo004.
  *
  * @author Frederic Delorme <frederic.delorme@gmail.com>
  * @version 1.0.0
  */
-public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
-
-  /**
-   * The ${PROJECT_MAIN_CLASS_NAME} modes.
-   */
-  public enum AppMode {
-    /**
-     * Development mode.
-     * Used for debugging and development purposes.
-     */
-    DEVELOPMENT,
-    /**
-     * Production mode.
-     * Used for running the ${PROJECT_MAIN_CLASS_NAME} in a production environment.
-     */
-    PRODUCTION
-  }
-
-  /**
-   * Text alignment options.
-   */
-  public enum TextAlign {
-    LEFT, CENTER, RIGHT
-  }
-
-  /**
-   * A simple circular queue implementation using LinkedList.
-   */
-  public class CircularQueue<E> extends LinkedList<E> {
-    private final int capacity;
-
-    public CircularQueue(int capacity) {
-      this.capacity = capacity;
-    }
-
-    @Override
-    public boolean add(E e) {
-      if (size() >= capacity)
-        removeFirst();
-      return super.add(e);
-    }
-  }
-
-  /**
-   * A simple entity class for game objects.
-   */
-  public static class Entity {
-    public static long index = 0;
-    public long id = index++;
-    public String name = "noname_%d".formatted(this.id);
-    public float x;
-    public float y;
-
-    public float dx;
-    public float dy;
-
-    public int width;
-    public int height;
-    public Color color;
-    public Color fillColor;
-
-    public BufferedImage sprite;
-
-    public List<Behavior<Entity>> behaviors = new LinkedList<>();
-
-    /**
-     * Creates a new entity with the specified name.
-     * 
-     * @param name
-     */
-    public Entity(String name) {
-      this.name = name;
-    }
-
-    /**
-     * Creates a new entity with the specified parameters.
-     * 
-     * @param name
-     * @param x
-     * @param y
-     * @param width
-     * @param height
-     */
-    public Entity(String name, int x, int y, int width, int height) {
-      this(name);
-      this.x = x;
-      this.y = y;
-      this.width = width;
-      this.height = height;
-      this.color = Color.WHITE;
-      this.fillColor = Color.BLUE;
-    }
-
-    /**
-     * Test id 2 entities intersects.
-     * 
-     * @param other the other entity to test against.
-     * @return true if the entities intersect, false otherwise.
-     */
-    public boolean intersects(Entity other) {
-      return this.x < other.x + other.width && this.x + this.width > other.x &&
-          this.y < other.y + other.height && this.y + this.height > other.y;
-    }
-
-    /**
-     * Draw the entity using the provided Graphics2D context.
-     * 
-     * @param g the Graphics2D context to draw on.
-     */
-    public void draw(Graphics2D g) {
-      if (sprite != null) {
-        g.drawImage(sprite, (int) x, (int) y, width, height, null);
-      } else {
-        g.setColor(fillColor);
-        g.fillRect((int) x, (int) y, width, height);
-        g.setColor(color);
-        g.drawRect((int) x, (int) y, width, height);
-      }
-    }
-
-    /**
-     * Update the entity's position based on its velocity.
-     */
-    public void update() {
-      for (Behavior<Entity> b : behaviors) {
-        b.apply(this);
-      }
-      x += dx;
-      y += dy;
-    }
-
-    /**
-     * Set the sprite for the entity and update its width and height accordingly.
-     * 
-     * @param sprite the BufferedImage sprite to set.
-     * @return the updated entity.
-     */
-    public Entity setSprite(BufferedImage sprite) {
-      this.sprite = sprite;
-      this.width = sprite.getWidth();
-      this.height = sprite.getHeight();
-      return this;
-    }
-
-    /**
-     * Set the velocity of the entity.
-     * 
-     * @param dx the change in x position
-     * @param dy the change in y position
-     * @return the updated entity
-     */
-    public Entity setVelocity(int dx, int dy) {
-      this.dx = dx;
-      this.dy = dy;
-      return this;
-    }
-
-    /**
-     * Set the position of the entity.
-     * 
-     * @param x the x coordinate
-     * @param y the y coordinate
-     * @return the updated entity
-     */
-    public Entity setPosition(int x, int y) {
-      this.x = x;
-      this.y = y;
-      return this;
-    }
-
-    /**
-     * Set the color of the entity.
-     * 
-     * @param color the color to set
-     * @return the updated entity
-     */
-    public Entity setColor(Color color) {
-      this.color = color;
-      return this;
-    }
-
-    /**
-     * Set the fill color of the entity.
-     * 
-     * @param color the fill color to set
-     * @return the updated entity
-     */
-    public Entity setFillColor(Color color) {
-      this.fillColor = color;
-      return this;
-    }
-
-    public Entity addBehavior(Behavior<Entity> behavior) {
-      this.behaviors.add(behavior);
-      return this;
-    }
-
-    /**
-     * set Entity size.
-     * 
-     * @param width  Entity width
-     * @param height Entity height
-     * @return
-     */
-    public Entity setSize(int width, int height) {
-      this.width = width;
-      this.height = height;
-      return this;
-    }
-
-  }
-
-  /**
-   * A simple world class representing the game world boundaries.
-   */
-  public static class World extends Entity {
-    public float gravity = 0.981f;
-    private Color colorGround = Color.GREEN.darker().darker();
-
-    /**
-     * Creates a new world with the specified width and height.
-     * 
-     * @param width  width of the World
-     * @param height heoght of the world
-     */
-    public World(int width, int height) {
-      super("world", 0, 0, width, height);
-      this.color = Color.DARK_GRAY;
-      this.fillColor = Color.CYAN;
-    }
-
-    /**
-     * Check if the entity is within the world boundaries.
-     * 
-     * @param e the entity to check
-     * @return true if the entity is within the world, false otherwise
-     */
-    public boolean contains(Entity e) {
-      return e.x >= this.x && e.x + e.width <= this.x + this.width &&
-          e.y >= this.y && e.y + e.height <= this.y + this.height;
-    }
-
-    /**
-     * Clamp the entity's position within the world boundaries.
-     * 
-     * @param e the entity to clamp
-     */
-    public void clamp(Entity e) {
-      if (e.x < this.x) {
-        e.x = this.x;
-      } else if (e.x + e.width > this.x + this.width) {
-        e.x = this.x + this.width - e.width;
-      }
-      if (e.y < this.y) {
-        e.y = this.y;
-      } else if (e.y + e.height > this.y + this.height) {
-        e.y = this.y + this.height - e.height;
-      }
-    }
-
-    @Override
-    public void draw(Graphics2D g) {
-      super.draw(g);
-      g.setColor(colorGround);
-      g.fillRect(-this.width, this.height, this.width * 3, this.height);
-    }
-
-  }
-
-  /**
-   * Define a Behavior to be applied to any object T.
-   */
-  public interface Behavior<T> {
-    /**
-     * Apply the Behavior to the T object.
-     * 
-     * @param o T object instance to apply Behavior to.
-     */
-    void apply(T o);
-  }
+public class Platformer implements KeyListener {
 
   /**
    * The resource bundle for internationalization.
    */
   public static ResourceBundle messages = ResourceBundle.getBundle("i18n/messages");
   /**
-   * The ${PROJECT_MAIN_CLASS_NAME} configuration properties.
+   * The Platformer configuration properties.
    */
   public static Properties config = new Properties();
   /**
-   * The debug level for the ${PROJECT_MAIN_CLASS_NAME}.
+   * The debug level for the Platformer.
    * 0 = no debug, 1 = basic debug, 2 = detailed debug
    */
   public static int debug = 0;
   /**
-   * The current ${PROJECT_MAIN_CLASS_NAME} mode.
+   * The current Platformer mode.
    * Default is PRODUCTION.
    */
   public static AppMode mode = AppMode.PRODUCTION;
 
   /**
-   * Flag to indicate if the ${PROJECT_MAIN_CLASS_NAME} should exit.
+   * Flag to indicate if the Platformer should exit.
    */
   public boolean exit = false;
 
@@ -341,7 +62,7 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   public boolean keys[] = new boolean[1024];
 
   /**
-   * The main ${PROJECT_MAIN_CLASS_NAME} window.
+   * The main Platformer window.
    */
   public JFrame window;
 
@@ -354,21 +75,21 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   public int score = 0, life = 3;
 
   /**
-   * Creates a new instance of the ${PROJECT_MAIN_CLASS_NAME}.
+   * Creates a new instance of the Platformer.
    */
-  public ${PROJECT_MAIN_CLASS_NAME}() {
-    info(${PROJECT_MAIN_CLASS_NAME}.class, "Create ${PROJECT_MAIN_CLASS_NAME} '%s'", messages.getString("app.name"));
+  public Platformer() {
+    info(Platformer.class, "Create Platformer '%s'", messages.getString("app.name"));
   }
 
   /**
-   * Runs the ${PROJECT_MAIN_CLASS_NAME}.
+   * Runs the Platformer.
    *
    * @param args the command-line arguments
    */
   public void run(String[] args) {
-    info(${PROJECT_MAIN_CLASS_NAME}.class, "${PROJECT_MAIN_CLASS_NAME} '%s' is running..", messages.getString("app.name"));
+    info(Platformer.class, "Platformer '%s' is running..", messages.getString("app.name"));
     for (String arg : args) {
-      info(${PROJECT_MAIN_CLASS_NAME}.class, "", arg);
+      info(Platformer.class, "", arg);
     }
     init(args);
     loop();
@@ -482,12 +203,12 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
   }
 
   /**
-   * Initializes the ${PROJECT_MAIN_CLASS_NAME}.
+   * Initializes the Platformer.
    *
    * @param args the command-line arguments
    */
   private void init(String[] args) {
-    info(${PROJECT_MAIN_CLASS_NAME}.class, "${PROJECT_MAIN_CLASS_NAME} '%s' is initializing.", messages.getString("app.name"));
+    info(Platformer.class, "Platformer '%s' is initializing.", messages.getString("app.name"));
     // default values
     config.put("app.config.file", "/config.properties");
     config.put("app.debug", 0);
@@ -497,63 +218,63 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
       String[] kv = arg.split("=", 2);
       if (kv.length == 2) {
         config.put(kv[0], kv[1]);
-        info(${PROJECT_MAIN_CLASS_NAME}.class, "Set config from argument %s = %s", kv[0], kv[1]);
+        info(Platformer.class, "Set config from argument %s = %s", kv[0], kv[1]);
       } else {
-        warn(${PROJECT_MAIN_CLASS_NAME}.class, "Invalid config argument: %s", arg);
+        warn(Platformer.class, "Invalid config argument: %s", arg);
       }
-      info(${PROJECT_MAIN_CLASS_NAME}.class, "", arg);
+      info(Platformer.class, "", arg);
     }
     // load configuration file
     try {
-      config.load(${PROJECT_MAIN_CLASS_NAME}.class.getResourceAsStream(config.getProperty("app.config.file")));
+      config.load(Platformer.class.getResourceAsStream(config.getProperty("app.config.file")));
     } catch (Exception e) {
-      error(${PROJECT_MAIN_CLASS_NAME}.class, "Failed to load config file: %s", e.getMessage());
+      error(Platformer.class, "Failed to load config file: %s", e.getMessage());
     }
     // extract configuration values
     parseConfiguration(config);
   }
 
   /**
-   * Parses the ${PROJECT_MAIN_CLASS_NAME} configuration.
+   * Parses the Platformer configuration.
    *
    * @param config the configuration properties
    */
   private void parseConfiguration(Properties config) {
-    info(${PROJECT_MAIN_CLASS_NAME}.class, "Parsing configuration.");
+    info(Platformer.class, "Parsing configuration.");
     for (String key : config.stringPropertyNames()) {
       String value = config.getProperty(key);
       switch (key) {
         case "app.debug":
           debug = Integer.parseInt(value);
-          info(${PROJECT_MAIN_CLASS_NAME}.class, "read config '%s' = '%s'", key, value);
+          info(Platformer.class, "read config '%s' = '%s'", key, value);
           break;
         case "app.mode":
           mode = AppMode.valueOf(value.toUpperCase());
-          info(${PROJECT_MAIN_CLASS_NAME}.class, "read config '%s' = '%s'", key, value);
+          info(Platformer.class, "read config '%s' = '%s'", key, value);
           break;
         default:
-          warn(${PROJECT_MAIN_CLASS_NAME}.class, "Unknown config key: %s", key);
+          warn(Platformer.class, "Unknown config key: %s", key);
       }
-      info(${PROJECT_MAIN_CLASS_NAME}.class, "Config '%s' = '%s'", key, value);
+      info(Platformer.class, "Config '%s' = '%s'", key, value);
     }
   }
 
   /**
-   * Disposes the ${PROJECT_MAIN_CLASS_NAME} resources.
+   * Disposes the Platformer resources.
    */
   private void dispose() {
     if (Optional.ofNullable(window).isPresent()) {
       window.dispose();
     }
-    info(${PROJECT_MAIN_CLASS_NAME}.class, "${PROJECT_MAIN_CLASS_NAME} '%s' is ending.", messages.getString("app.name"));
+    info(Platformer.class, "Platformer '%s' is ending.", messages.getString("app.name"));
 
   }
 
   /**
-   * The main entry point for the ${PROJECT_MAIN_CLASS_NAME}.
+   * The main entry point for the Platformer.
    */
   public static void main(String[] args) {
-    ${PROJECT_MAIN_CLASS_NAME} app = new ${PROJECT_MAIN_CLASS_NAME}();
+    Platformer app = new Platformer();
     app.run(args);
   }
 

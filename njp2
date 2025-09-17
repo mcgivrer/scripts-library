@@ -288,10 +288,10 @@ app.version=${PROJECT_APP_VERSION}
 EOL
 
 # Générer le fichier en utilisant envsubst
-if [[ -n "${FRAME}" ]]; then
+if [[ -n "${FRAME}" || -n "${APP_TEMPLATE}" ]]; then
     cat <<EOL >> "${PROJECT_NAME}/src/main/resources/i18n/messages.properties"
-app.message.welcome=Welcome into ${APPLICATION_NAME}
-app.message.exit=Press the [ESCAPE] key to exit...
+app.message.welcome=Welcome into ${APPLICATION_NAME} (${PROJECT_APP_VERSION}) application.
+app.message.exit=Press [ESCAPE] to exit....
 EOL
 fi
 
