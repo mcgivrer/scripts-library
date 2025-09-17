@@ -1,14 +1,62 @@
 #!/bin/bash
 # New Java project script generation
-# Version: 1.0
+# Version: 1.3
 # Author: Frédéric Delorme <frederic.delorme@gmail.com>
-# Date: 2025-07-25
+# Date: 2025-09-17
 # 
 # This script creates a new Java project with a specified structure,
 # including directories for source code, resources, tests, and documentation.
 # It also initializes a Git repository, sets up a README file, and configures
 # the project for use with VSCode and SDKMAN.
 # This script is designed to be run in a Unix-like environment with bash.
+#
+# TEMPLATE DOCUMENTATION
+# ======================
+# This script supports generating Java application classes using customizable templates. Two main templates are provided:
+# 
+# App_template.java: A minimal application class with configuration, logging, and internationalization support.
+# App_Frame_template.java: An extended version with a graphical window (JFrame), event handling, and drawing utilities.
+# 
+# But you can provide your own template with the -t,--template <MY_OWN_TEMPLATE> option in the CLI.
+#
+# Templating Workflow
+# -------------------
+# Template Variables
+#
+# The templates use placeholders such as 
+#  - ${PROJECT_PACKAGE_NAME}, 
+#  - ${PROJECT_MAIN_CLASS_NAME}, 
+#  - ${PROJECT_NAME}, 
+#  - ${GIT_AUTHOR_NAME}, 
+#  - ${GIT_AUTHOR_EMAIL}, 
+#  - and ${PROJECT_APP_VERSION}.
+#
+# These are replaced by the script with project-specific values.
+# 
+# Class Generation
+# ----------------
+# The script reads the selected template.
+# It substitutes all placeholders with actual values from the project configuration or user input.
+# The resulting Java file is saved in the appropriate package directory.
+#
+# ! Limitation  !
+# The template engine is very simple and very limited, it will only replace tokens with values. No Loop, no confition.
+#  
+# Features
+# --------
+# App_template.java:
+#  - Basic application lifecycle (init, run, dispose)
+#  - Config file loading and argument parsing
+#  - Logging (info, warn, debug, error)
+#  - Internationalization via ResourceBundle
+# App_Frame_template.java:
+#  - All features of App_template.java
+#  - GUI window creation (JFrame)
+#  - Keyboard event handling
+#  - Double-buffered rendering and text drawing utilities
+#
+# Happy Coding !
+# McG.
 #
 # MIT License
 # 
@@ -30,7 +78,7 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# 
+#  
 
 # Fonction pour afficher l'utilisation du script
 usage() {
