@@ -350,7 +350,7 @@ EOL
 mkdir -p "${PROJECT_APP_NAME}"/src/main/resources/i18n
 cat <<EOL | iconv -f UTF-8 -t UTF-8 > "${PROJECT_APP_NAME}"/src/main/resources/i18n/messages.properties
 app.name=${PROJECT_APP_NAME}
-app.version=1.0.0
+app.version=${PROJECT_APP_VERSION}
 EOL
 # Générer le fichier en utilisant envsubst
 if [[ -n "${FRAME}" || -n "${APP_TEMPLATE}" ]]; then
