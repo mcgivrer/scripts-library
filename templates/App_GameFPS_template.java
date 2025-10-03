@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.swing.JFrame;
 
 /**
- * The main ${PROJECT_MAIN_CLASS_NAME} class for project demo008.
+ * The main ${PROJECT_MAIN_CLASS_NAME} class for project ${PROJECT_NAME}.
  *
  * @author ${GIT_AUTHOR_NAME} <${GIT_AUTHOR_EMAIL}>
  * @version ${PROJECT_APP_VERSION}
@@ -80,7 +80,14 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
      */
     public static AppMode mode = AppMode.DEVELOPMENT;
 
+    /**
+     * exit flag; if true, means request normal exit of the program.
+     */
     public boolean exit = false;
+    /**
+     * Pause fla: antyhing about update is in pause if true.
+     */
+    public boolean pause = false;
 
     public CircularQueue<KeyEvent> keyEvents = new CircularQueue<>(100);
     public boolean keys[] = new boolean[1024];
@@ -173,8 +180,9 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
         initialize();
         do {
             startTime = endTime;
-
-            update(stats, elapsed);
+            if(!pause){
+                update(stats, elapsed);
+            }
             render(stats, elapsed);
 
             sleep((1000 / 60) - elapsed > 0 ? (1000 / 60) - elapsed : 1);
@@ -213,6 +221,15 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
         window.pack();
         window.setVisible(true);
         window.createBufferStrategy(3);
+    }
+
+    public void reset(){
+        //reset your scene here.
+    }
+
+
+    public void createScene(){
+        // create you ame scene here !
     }
 
     public void update(Map<String, Object> stats, long elapsed) {
@@ -373,6 +390,20 @@ public class ${PROJECT_MAIN_CLASS_NAME} implements KeyListener {
         switch (ke.getKeyCode()) {
             case KeyEvent.VK_ESCAPE -> {
                 exit = true;
+            }
+            // switch level of the debug display /log
+            case KeyEvent.VK_D -> {
+                if (e.isControlDown()) {
+                    debug = (debug + 1) % 10;
+                }
+            }
+            case KeyEvent.VK_P, KeyEvent.VK_PAUSE -> {
+                pause = !pause;
+            }
+            case KeyEvent.VK_Z -> {
+                // reset of te scene
+                reset();
+                createScene();
             }
             default -> {
 
