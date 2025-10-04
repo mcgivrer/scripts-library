@@ -1,0 +1,62 @@
+#!/bin/sh
+
+github_license_api="https://api.github.com/licenses"
+cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/license-generator"
+
+downloadFile() {
+  url="${1}"
+  dest="${2}"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -sS -L "${url}" --compressed > "${dest}" \
+      || { printf "%s" "Error: Failed to fetch data using curl."; exit 1; }
+  elif command -v wget >/dev/null 2>&1; then
+    wget -r "${url}" --tries=5 -O "${dest}" \
+      || { printf "%s" "Error: Failed to fetch data using wget."; exit 1; }
+  elif command -v aria2c >/dev/null 2>&1; then
+    aria2c --allow-overwrite=true "${url}" -o "${dest}" \
+      || { printf "%s" "Error: Failed to fetch data using aria2c."; exit 1; }
+  else
+    printf "%s" "Error: Neither curl nor wget nor aria2c is available. Install one of them."
+    exit 1
+  fi
+}
+
+[ "$(command -v fzf)" ] \
+  || { printf "%s" "Error: fzf is required for this script. Install it first."; exit 1; }
+
+mkdir -p "${cache_dir}"
+
+downloadFile "${github_license_api}" "${cache_dir}/licenses.json"
+
+jq -r '.[] | select(.key) | .url' "${cache_dir}/licenses.json" \
+  > "${cache_dir}/license_urls"
+
+jq -r '.[] | select(.key) | .name' "${cache_dir}/licenses.json" \
+  > "${cache_dir}/license_names"
+
+chosen_license=$(grep '' "${cache_dir}/license_names" \
+  | fzf --prompt "> Choose a license: " --height 40% --reverse)
+
+[ "${chosen_license}" ] || exit 1
+printf "%s" "Choose a license: ${chosen_license}"
+
+line_number=$(grep -n "${chosen_license}" "${cache_dir}/license_names" \
+  | cut -d ":" -f1)
+
+license_url="$(sed -n "${line_number}p" "${cache_dir}/license_urls")"
+license_name="$(printf "%s" "${license_url}" | cut -d "/" -f5)"
+
+downloadFile "${license_url}" "${cache_dir}/${license_name}.json"
+
+printf "\n%s" "Enter your name: "
+read -r fullname
+
+printf "%s" "Enter year: "
+read -r year
+[ "${year}" ] || year="$(date '+%Y')"
+
+jq -r '.body' "${cache_dir}/${license_name}.json" \
+  | sed "s/\[fullname\]/${fullname}/g" \
+  | sed "s/\[year\]/${year}/g" > LICENSE
+
