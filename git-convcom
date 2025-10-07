@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Types de commit disponibles
+commit_types=("feat" "fix" "docs" "style" "refactor" "perf" "test" "chore" "build" "ci")
+
+# Fonction pour afficher les types de commits disponibles
+show_commit_types() {
+    echo "Types de commit disponibles :"
+    for type in "${commit_types[@]}"; do
+        echo "  $type: $(get_commit_description $type)"
+    done
+}
+
+# Fonction pour obtenir la description d'un type de commit
+get_commit_description() {
+    case $1 in
+        feat) echo "Nouvelle fonctionnalité" ;;
+        fix) echo "Correction de bug" ;;
+        docs) echo "Documentation" ;;
+        style) echo "Changements de formatage" ;;
+        refactor) echo "Refactoring de code" ;;
+        perf) echo "Amélioration de performance" ;;
+        test) echo "Ajout de tests" ;;
+        chore) echo "Tâches d'entretien" ;;
+        build) echo "Changements de configuration" ;;
+        ci) echo "Changements liés à l'intégration continue" ;;
+    esac
+}
+
+# Fonction de complétion
+_git_convcom_complete() {
+    local current_word="${COMP_WORDS[COMP_CWORD]}"
+    local options="${commit_types[*]}"
+    COMPREPLY=( $(compgen -W "${options}" -- ${current_word}) )
+}
+
+# Enregistrement de la fonction de complétion
+complete -F _git_convcom_complete git convcom
+
+# Demande à l'utilisateur de choisir le type de commit
+show_commit_types
+echo "Choisissez un type de commit :"
+read commit_type
+
+# Vérification de la validité du type de commit
+if [[ ! " ${commit_types[@]} " =~ " ${commit_type} " ]]; then
+    echo "Erreur : Type de commit invalide. Veuillez choisir parmi les types affichés."
+    exit 1
+fi
+
+# Demande à l'utilisateur de saisir le message
+echo "Entrez la description du commit :"
+read commit_description
+
+# Demande à l'utilisateur d'entrer une portée optionnelle
+echo "Entrez la portée optionnelle (appuyez sur Entrée pour ignorer) :"
+read commit_scope
+
+# Construction du message de commit
+if [ -n "$commit_scope" ]; then
+    commit_message="$commit_type($commit_scope): $commit_description"
+else
+    commit_message="$commit_type: $commit_description"
+fi
+
+# Effectuer le commit avec le message validé
+git commit -m "$commit_message"
