@@ -1,67 +1,137 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Types de commit disponibles
-commit_types=("feat" "fix" "docs" "style" "refactor" "perf" "test" "chore" "build" "ci")
+# git-convcom : aide à la création de Conventional Commits
+# Usage:
+#   git convcom [type] [scope] [--] [-m "short"]    # non-interactive possible
+#   git convcom                                     # interactive
 
-# Fonction pour afficher les types de commits disponibles
-show_commit_types() {
-    echo "Types de commit disponibles :"
-    for type in "${commit_types[@]}"; do
-        echo "  $type: $(get_commit_description $type)"
-    done
+TYPES=(feat fix docs style refactor perf test chore build ci)
+# description max length suggestion
+SUBJECT_MAX=72
+
+# helper: check in a git repo
+in_git_repo() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1
 }
 
-# Fonction pour obtenir la description d'un type de commit
-get_commit_description() {
-    case $1 in
-        feat) echo "Nouvelle fonctionnalité" ;;
-        fix) echo "Correction de bug" ;;
-        docs) echo "Documentation" ;;
-        style) echo "Changements de formatage" ;;
-        refactor) echo "Refactoring de code" ;;
-        perf) echo "Amélioration de performance" ;;
-        test) echo "Ajout de tests" ;;
-        chore) echo "Tâches d'entretien" ;;
-        build) echo "Changements de configuration" ;;
-        ci) echo "Changements liés à l'intégration continue" ;;
-    esac
-}
+# build full message and commit
+do_commit() {
+  local type="$1" scope="$2" subject="$3" body="$4" footer="$5"
+  local header
+  if [[ -n "$scope" ]]; then
+    header="$type($scope): $subject"
+  else
+    header="$type: $subject"
+  fi
 
-# Fonction de complétion
-_git_convcom_complete() {
-    local current_word="${COMP_WORDS[COMP_CWORD]}"
-    local options="${commit_types[*]}"
-    COMPREPLY=( $(compgen -W "${options}" -- ${current_word}) )
-}
+  # show and confirm
+  echo "----- commit message -----"
+  echo "$header"
+  echo
+  [[ -n "$body" ]] && echo "$body" && echo
+  [[ -n "$footer" ]] && echo "$footer" && echo
+  echo "--------------------------"
 
-# Enregistrement de la fonction de complétion
-complete -F _git_convcom_complete git convcom
-
-# Demande à l'utilisateur de choisir le type de commit
-show_commit_types
-echo "Choisissez un type de commit :"
-read commit_type
-
-# Vérification de la validité du type de commit
-if [[ ! " ${commit_types[@]} " =~ " ${commit_type} " ]]; then
-    echo "Erreur : Type de commit invalide. Veuillez choisir parmi les types affichés."
+  read -r -p "Commit with this message? [y/N] " ans
+  if [[ "$ans" =~ ^[Yy]$ ]]; then
+    git add -A
+    git commit -m "$header" -m "$body" || true
+    # If footer exists, append as note or separate commit message line
+    if [[ -n "$footer" ]]; then
+      # add footer as separate paragraph (already added via -m above if non-empty)
+      true
+    fi
+    echo "Committed."
+  else
+    echo "Aborted."
     exit 1
+  fi
+}
+
+# open editor for multi-line body (uses VISUAL/EDITOR)
+edit_text() {
+  local tmp
+  tmp="$(mktemp)"
+  "${VISUAL:-${EDITOR:-vi}}" "$tmp"
+  sed -n '/./p' "$tmp" || true  # print non-empty lines
+  cat "$tmp"
+  rm -f "$tmp"
+}
+
+# interactive flow
+interactive() {
+  echo "Conventional Commit assistant"
+
+  # choose type
+  echo "Type (use number or name) :"
+  local i
+  for i in "${!TYPES[@]}"; do
+    printf "  %2d) %s\n" $((i+1)) "${TYPES[i]}"
+  done
+  read -r -p "> " type_in
+  if [[ "$type_in" =~ ^[0-9]+$ ]]; then
+    type="${TYPES[$((type_in-1))]:-}"
+  else
+    type="$type_in"
+  fi
+  if [[ -z "$type" || ! " ${TYPES[*]} " =~ " ${type} " ]]; then
+    echo "Type invalide." >&2
+    exit 1
+  fi
+
+  # scope (optional)
+  read -r -p "Scope (optionnel) : " scope
+
+  # subject (short)
+  read -e -p "Subject (court) : " subject
+  if (( ${#subject} > SUBJECT_MAX )); then
+    echo "Warning: subject > $SUBJECT_MAX chars (${#subject})."
+  fi
+
+  # body (open editor)
+  echo "Editer le corps du message (laisser vide pour none). Le fichier s'ouvrira dans \$EDITOR."
+  read -r -p "Ouvrir l'éditeur ? [Y/n] " edityn
+  body=""
+  if [[ -z "$edityn" || "$edityn" =~ ^[Yy]$ ]]; then
+    body="$(edit_text)"
+  fi
+
+  # footer (e.g. BREAKING CHANGE, closes #123)
+  read -r -p "Footer (optionnel) : " footer
+
+  do_commit "$type" "$scope" "$subject" "$body" "$footer"
+}
+
+# non-interactive: positional args
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<EOF
+Usage:
+  git convcom            # interactive
+  git convcom <type> <scope?>  # non-interactive: will prompt subject/body/editor
+EOF
+  exit 0
 fi
 
-# Demande à l'utilisateur de saisir le message
-echo "Entrez la description du commit :"
-read commit_description
+if ! in_git_repo; then
+  echo "Not inside a git repository." >&2
+  exit 1
+fi
 
-# Demande à l'utilisateur d'entrer une portée optionnelle
-echo "Entrez la portée optionnelle (appuyez sur Entrée pour ignorer) :"
-read commit_scope
-
-# Construction du message de commit
-if [ -n "$commit_scope" ]; then
-    commit_message="$commit_type($commit_scope): $commit_description"
+if [[ $# -ge 1 ]]; then
+  # accept: git convcom type scope
+  type="$1"
+  scope="${2:-}"
+  echo "Subject (short) :"
+  read -r subject
+  echo "Ouvrir éditeur pour le corps ?"
+  read -r yn
+  body=""
+  if [[ -z "$yn" || "$yn" =~ ^[Yy]$ ]]; then
+    body="$(edit_text)"
+  fi
+  footer=""
+  do_commit "$type" "$scope" "$subject" "$body" "$footer"
 else
-    commit_message="$commit_type: $commit_description"
+  interactive
 fi
-
-# Effectuer le commit avec le message validé
-git commit -m "$commit_message"
