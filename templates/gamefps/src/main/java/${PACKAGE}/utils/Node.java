@@ -1,6 +1,6 @@
-package{{BASE_PACKAGE}}.utils;
+package ${PACKAGE}.utils;
 
-import{{BASE_PACKAGE}}.{{MAIN_CLASS_NAME}};
+import ${PACKAGE}.${MAINCLASS};
 
 import java.util.List;
 import java.util.Objects;
@@ -76,7 +76,7 @@ public class Node<T> {
      */
     private void logTree(int indent) {
         String indentation = "   ".repeat(indent);
-        {{MAIN_CLASS_NAME}}.debug(Node.class, 0, indentation + "|_ %s (id:%d)[%s]", name, id, getClass().getCanonicalName());
+        ${MAINCLASS}.debug(Node.class, 0, indentation + "|_ %s (id:%d)[%s]", name, id, getClass().getCanonicalName());
 
         for (Node<?> child : children) {
             child.logTree(indent + 1);

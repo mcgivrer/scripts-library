@@ -1,4 +1,4 @@
-package com.snapgames.arc.behaviors;
+package ${PACKAGE}.behaviors;
 
 /**
  * Define a Behavior to be applied to any object T.

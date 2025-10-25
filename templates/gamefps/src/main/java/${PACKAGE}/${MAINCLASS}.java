@@ -1,4 +1,4 @@
-package {{BASE_PACKAGE}};
+package ${PACKAGE};
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -18,16 +18,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.JFrame;
 
-import {{BASE_PACKAGE}}.utils.AppMode;
-import {{BASE_PACKAGE}}.utils.CirculQueue;
+import ${PACKAGE}.utils.AppMode;
+import ${PACKAGE}.utils.TextAlign;
+import ${PACKAGE}.utils.CircularQueue;
 
 /**
- * The main {{MAIN_CLASS_NAME}} class for project demo008.
+ * The main ${MAINCLASS} class for project demo008.
  *
- * @author {{AUTHOR_NAME}} <{{AUTHOR_EMAIL}}>
- * @version {{PROJECT_VERSION}}
+ * @author ${AUTHOR_NAME} <${AUTHOR_EMAIL}>
+ * @version ${PROJECT_VERSION}
+ * @since ${PROJECT_YEAR}
  */
-public class {{MAIN_CLASS_NAME}} implements KeyListener {
+public class ${MAINCLASS} implements KeyListener {
 
 
     /**
@@ -35,16 +37,16 @@ public class {{MAIN_CLASS_NAME}} implements KeyListener {
      */
     public static ResourceBundle i18Text = ResourceBundle.getBundle("i18n/messages");
     /**
-     * The {{MAIN_CLASS_NAME}} configuration properties.
+     * The ${MAINCLASS} configuration properties.
      */
     public static Properties config = new Properties();
     /**
-     * The debug level for the {{MAIN_CLASS_NAME}}.
+     * The debug level for the ${MAINCLASS}.
      * 0 = no debug, 1 = basic debug, 2> = detailed debug
      */
     public static int debug = 0;
     /**
-     * The current {{MAIN_CLASS_NAME}} mode.
+     * The current ${MAINCLASS} mode.
      * Default is PRODUCTION.
      */
     public static AppMode mode = AppMode.DEVELOPMENT;
@@ -57,21 +59,21 @@ public class {{MAIN_CLASS_NAME}} implements KeyListener {
     public JFrame window;
 
     /**
-     * Creates a new instance of the {{MAIN_CLASS_NAME}}.
+     * Creates a new instance of the ${MAINCLASS}.
      */
-    public {{MAIN_CLASS_NAME}}() {
-        info({{MAIN_CLASS_NAME}}.class, "Create {{MAIN_CLASS_NAME}} '%s'", getI18n("app.name", "Application"));
+    public ${MAINCLASS}() {
+        info(${MAINCLASS}.class, "Create ${MAINCLASS} '%s'", getI18n("app.name", "Application"));
     }
 
     /**
-     * Runs the {{MAIN_CLASS_NAME}}.
+     * Runs the ${MAINCLASS}.
      *
      * @param args the command-line arguments
      */
     public void run(String[] args) {
-        info({{MAIN_CLASS_NAME}}.class, "{{MAIN_CLASS_NAME}} '%s' is running..", getI18n("app.name", "1.0.0"));
+        info(${MAINCLASS}.class, "${MAINCLASS} '%s' is running..", getI18n("app.name", "1.0.0"));
         for (String arg : args) {
-            info({{MAIN_CLASS_NAME}}.class, "- %s", arg);
+            info(${MAINCLASS}.class, "- %s", arg);
         }
         init(args);
         loop();
@@ -79,12 +81,12 @@ public class {{MAIN_CLASS_NAME}} implements KeyListener {
     }
 
     /**
-     * Initializes the {{MAIN_CLASS_NAME}}.
+     * Initializes the ${MAINCLASS}.
      *
      * @param args the command-line arguments
      */
     private void init(String[] args) {
-        info({{MAIN_CLASS_NAME}}.class, "{{MAIN_CLASS_NAME}} '%s' is initializing.", getI18n("app.name", "Application"));
+        info(${MAINCLASS}.class, "${MAINCLASS} '%s' is initializing.", getI18n("app.name", "Application"));
         // default values
         config.put("app.config.file", "/config.properties");
         config.put("app.debug", 0);
@@ -94,44 +96,44 @@ public class {{MAIN_CLASS_NAME}} implements KeyListener {
             String[] kv = arg.split("=", 2);
             if (kv.length == 2) {
                 config.put(kv[0], kv[1]);
-                info({{MAIN_CLASS_NAME}}.class, "Set config from argument %s = %s", kv[0], kv[1]);
+                info(${MAINCLASS}.class, "Set config from argument %s = %s", kv[0], kv[1]);
             } else {
-                warn({{MAIN_CLASS_NAME}}.class, "Invalid config argument: %s", arg);
+                warn(${MAINCLASS}.class, "Invalid config argument: %s", arg);
             }
-            info({{MAIN_CLASS_NAME}}.class, "", arg);
+            info(${MAINCLASS}.class, "", arg);
         }
         // load configuration file
         try {
-            config.load({{MAIN_CLASS_NAME}}.class.getResourceAsStream(config.getProperty("app.config.file")));
+            config.load(${MAINCLASS}.class.getResourceAsStream(config.getProperty("app.config.file")));
         } catch (Exception e) {
-            error({{MAIN_CLASS_NAME}}.class, "Failed to load config file: %s", e.getMessage());
+            error(${MAINCLASS}.class, "Failed to load config file: %s", e.getMessage());
         }
         // extract configuration values
         parseConfiguration(config);
     }
 
     /**
-     * Parses the {{MAIN_CLASS_NAME}} configuration.
+     * Parses the ${MAINCLASS} configuration.
      *
      * @param config the configuration properties
      */
     private void parseConfiguration(Properties config) {
-        info({{MAIN_CLASS_NAME}}.class, "Parsing configuration.");
+        info(${MAINCLASS}.class, "Parsing configuration.");
         for (String key : config.stringPropertyNames()) {
             String value = config.getProperty(key);
             switch (key) {
                 case "app.debug":
                     debug = Integer.parseInt(value);
-                    info({{MAIN_CLASS_NAME}}.class, "read config '%s' = '%s'", key, value);
+                    info(${MAINCLASS}.class, "read config '%s' = '%s'", key, value);
                     break;
                 case "app.mode":
                     mode = AppMode.valueOf(value.toUpperCase());
-                    info({{MAIN_CLASS_NAME}}.class, "read config '%s' = '%s'", key, value);
+                    info(${MAINCLASS}.class, "read config '%s' = '%s'", key, value);
                     break;
                 default:
-                    warn({{MAIN_CLASS_NAME}}.class, "Unknown config key: %s", key);
+                    warn(${MAINCLASS}.class, "Unknown config key: %s", key);
             }
-            info({{MAIN_CLASS_NAME}}.class, "Config '%s' = '%s'", key, value);
+            info(${MAINCLASS}.class, "Config '%s' = '%s'", key, value);
         }
     }
 
@@ -229,22 +231,22 @@ public class {{MAIN_CLASS_NAME}} implements KeyListener {
     }
 
     /**
-     * Disposes the {{MAIN_CLASS_NAME}} resources.
+     * Disposes the ${MAINCLASS} resources.
      */
     private void dispose() {
         if (Optional.ofNullable(window).isPresent()) {
             window.dispose();
         }
-        info({{MAIN_CLASS_NAME}}.class, "{{MAIN_CLASS_NAME}} '%s' is ending.", i18Text.getString("app.name"));
+        info(${MAINCLASS}.class, "${MAINCLASS} '%s' is ending.", i18Text.getString("app.name"));
 
     }
 
     /**
-     * The main entry point for the {{MAIN_CLASS_NAME}}.
+     * The main entry point for the ${MAINCLASS}.
      */
     public static void main(String[] args) {
-        {{MAIN_CLASS_NAME}} {{MAIN_CLASS_NAME}} = new {{MAIN_CLASS_NAME}}();
-        {{MAIN_CLASS_NAME}}.run(args);
+        ${MAINCLASS} ${MAINCLASS} = new ${MAINCLASS}();
+        ${MAINCLASS}.run(args);
     }
 
     /**

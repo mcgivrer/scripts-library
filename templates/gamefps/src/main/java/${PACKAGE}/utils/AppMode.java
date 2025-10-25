@@ -1,4 +1,4 @@
-package {{BASE_PACKAGE}}.utils;
+package ${PACKAGE}.utils;
 
 /**
  * The ArcadiaApp modes.

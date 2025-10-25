@@ -1,7 +1,7 @@
-package {{BASE_PACKAGE}}.entity;
+package ${PACKAGE}.entity;
 
-import {{BASE_PACKAGE}}.behaviors.Behavior;
-import {{BASE_PACKAGE}}.utils.Node;
+import ${PACKAGE}.behaviors.Behavior;
+import ${PACKAGE}.utils.Node;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
