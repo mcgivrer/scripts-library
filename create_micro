@@ -1,0 +1,125 @@
+#!/bin/bash
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <project_name>"
+    echo "Description: create a java project structure into <project_name> with build script"
+    echo "NOTE: if git user.name and user.email configuration are not set, git initialization will fail"
+    echo "      Make sure to set them using:"
+    echo "        git config --global user.name \"Your Name\""
+    echo "        git config --global user.email \"your.email@example.com\""
+    echo "      After setting these, rerun the script."
+    exit 1
+fi
+JUNIT_VERSION=6.0.0
+GIT_USERNAME="$(git config --get user.name)<$(git config --get user.email)>"
+# create project structure
+mkdir -p $1/{src/{{main,test}/{java/core,resources},docs},libs,.vscode}
+# add readme
+echo """# README
+
+## Project Test013
+
+### Build JAR with sdkman and javac
+
+\`\`\`bash
+sdk env use
+chmod +x ./build
+./build
+\`\`\`
+
+### Run tests
+
+\`\`\`bash
+./build test
+\`\`\`
+
+### Execute project
+
+\`\`\`bash
+./build run debug=2
+\`\`\`
+
+>**Note** You can pass as many argument after run as you need.
+""" >$1/README.md
+# add gitignore
+echo "target/" >$1/.gitignore
+# add sdkman config
+echo "java=25-zulu">.sdkmanrc
+## download JUnit
+curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/$JUNIT_VERSION/junit-platform-console-standalone-$JUNIT_VERSION.jar >$1/libs/junit-platform-console-standalone-$JUNIT_VERSION.jar
+## build script
+curl -sL https://gist.githubusercontent.com/mcgivrer/3fabaa2cd1a1e1fc934c7b5da6a6e8ca/raw/build >$1/build
+sed -i \
+  -e "s/\[\[DEFAULT_APP_NAME\]\]/$1/g" \
+  -e "s/\[\[DEFAULT_APP_VERSION\]\]/0.0.1/g" \
+  -e "s/\[\[DEFAULT_MAIN_CLASS\]\]/core.App/g" \
+  -e "s/\[\[DEFAULT_AUTHOR_NAME\]\]/\"$GIT_USERNAME\"/g" \
+  -e "s/\[\[DEFAULT_VENDOR_NAME\]\]/VENDORNAME/g" \
+  "$1/build"
+## create VSCode support
+echo """
+{
+    \"java.project.sourcePaths\": [
+        \"src/main/java\",
+        \"src/main/resources\",
+        \"src/test/java\",
+        \"src/test/resources\"
+    ],
+    \"java.project.referencedLibraries\": [
+        \"libs/junit-platform-console-standalone-6.0.0.jar\"
+    ],
+    \"java.project.outputPath\": \"target/classes\"
+}
+""" > $1/.vscode/settings.json
+## Create source
+echo """
+package core;
+
+public class App {
+    public static int debug = 0;
+
+    public App() {
+        System.out.println(\"Start App class...\");
+    }
+
+    public void run(String[] args) {
+        if (args.length > 0) {
+            System.out.println(\"parse args:\");
+            int i = 0;
+            for (String arg : args) {
+                System.out.printf(\"- arg[%d]: %s%n\", i++, arg);
+                parseArg(arg);
+            }
+        } else {
+            System.out.println(\"- no argument...\");
+        }
+        System.out.println(\"End App class.\");
+    }
+
+    public void parseArg(String arg) {
+        if (arg.contains(\"=\")) {
+            String[] key = arg.split(\"=\", 2);
+            switch (key[0].toLowerCase().trim()) {
+                case \"d\", \"-d\", \"debug\", \"--debug\" -> {
+                    debug = Integer.parseInt(key[1]);
+                    System.out.printf(\"  set debug level to %d%n\", debug);
+                }
+                default -> {
+                    System.out.printf(\"  unknown argument: %s%n\", arg);
+                }
+            }
+        } else {
+            System.out.printf(\"  unknown argument: %s%n  Respect the format key=value%n\", arg);
+        }
+    }
+
+    public static void main(String[] args) {
+        App app = new App();
+        app.run(args);
+    }
+}
+""" > $1/src/main/java/core/App.java
+git init -b main --quiet $1/
+cd $1
+git add .
+git commit -m "Create Project $1"
+echo "==> Project $1 created."

@@ -1,15 +1,16 @@
 #!/bin/bash
-# mini build script v1.3 (c) 2025 Frederic Delorme
+# mini build script v1.4 (c) 2025 Frederic Delorme
 #
 # HISTORY:
 #
+# 2025-11-10 v1.4 : Adapt build script to latest Junit platform console standalone 6.0.0.
 # 2025-07-31 v1.3 : Update build script by adding help and release options.
 # 2025-06-03 v1.2 : Add Javadoc and sources package generation.
 #
 # USAGE:
 #
 # Please adapt the `PROJECT_NAME`, `PROJECT_VERSION` and `PROJECT_MAIN_CLASS_NAME` variables to fit your own project.
-# The generated JARs will be named as target/build/[PROJECT_NAME]-GameApp-[PROJECT_VERSION].jar
+# The generated JARs will be named as target/build/[PROJECT_NAME]-App-[PROJECT_VERSION].jar
 #
 # NOTE: `MAIN_CLASS` is a list of space-separated classes that generate as many JAR files as listed classes.
 # - Add external JAR dependencies (mostly in ./libs) by using the JARS variable.
@@ -46,19 +47,19 @@
 # will 
 # - run (r) the created JAR in `/target/build/[app_name]-[main_class]-[app_version].jar`.
 #
-PROJECT_NAME=DemoPlatform
+PROJECT_NAME=DemoGameFmkTemplate
 PROJECT_VERSION=1.0.0
-MAIN_CLASS=com.snapgames.demo.GameApp
-AUTHOR_NAME="Frederic Delorme<frederic.delorme@gmail.com>"
-VENDOR_NAME="vendor_name"
+MAIN_CLASS=com.snapgames.fmk.App
+AUTHOR_NAME="Frédéric Delorme<frederic.delorme@gmail.com>"
+VENDOR_NAME="SnapGames"
 # Compilation options
 COMPILATION_OPTS=
 # align the JDK version in the below SOURCE_VERSION variable
-SOURCE_VERSION=24
+SOURCE_VERSION=25
 # default source encoding
 SOURCE_ENCODING=UTF-8
 # Javadoc: define the root package
-JAVADOC_SUBPACKAGES="-group \"core\" com.snapgames.demo"
+JAVADOC_SUBPACKAGES="-group \"core\" com.snapgames.fmk"
 #
 # List of paths to jar dependencies (space separated).
 # e.g.: JARS="libs/jinput-2.0.8.jar libs/my-mandatory-lib-0.0.1.jar"
@@ -76,6 +77,7 @@ TARGET=./target
 BUILD=${TARGET}/build
 CLASSES=${TARGET}/classes
 RESOURCES=${SRC}/main/resources
+JUNIT_VERSION=6.0.0
 
 if [[ "$OSTYPE" == "linux"* ]]; then
   FS=":"
@@ -117,18 +119,18 @@ function generateJavadoc() {
 }
 #
 function generateSourceJar() {
-  echo -e "|_ ${BLUE}5. Generate JAR sources $TARGET/${PROJECT_NAME}-sources-${PROJECT_VERSION}.jar${NC}..."
+  echo -e "|_ ${BLUE}5. Generate JAR sources $TARGET/DemoGenJ004-sources-0.0.3.jar${NC}..."
   echo "> from : $SRC"
   echo "> to   : $TARGET/"
-  jar cvf ${TARGET}/${PROJECT_NAME}-${PROJECT_VERSION}-sources.jar -C $SRC .
+  jar cvf ${TARGET}/DemoGenJ004-0.0.3-sources.jar -C $SRC .
   echo -e "   |_ ${GREEN}done$NC"
-  echo "- create JAR sources ${PROJECT_NAME}-${PROJECT_VERSION}-sources.jar" >>$TARGET/build.log
+  echo "- create JAR sources DemoGenJ004-0.0.3-sources.jar" >>$TARGET/build.log
 }
 #
 function executeTests() {
   TEST_CLASSES=$TARGET/test-classes 
   TEST_RESOURCES=$SRC/test/resources 
-  LIB_TEST=$LIBS/junit-platform-console-standalone-1.12.2.jar
+  LIB_TEST=$LIBS/junit-platform-console-standalone-${JUNIT_VERSION}.jar
   echo -e "|_ ${BLUE}6. Execute tests${NC}..."
   echo "> from : $SRC/test"
   echo "> to   : $TARGET/test-classes"
@@ -142,13 +144,13 @@ function executeTests() {
   find $SRC/test -name '*.java' >$TARGET/test-sources.lst
   javac -source $SOURCE_VERSION -encoding $SOURCE_ENCODING $COMPILATION_OPTS -cp ".${FS}$LIB_TEST${FS}${EXTERNAL_JARS}" -d $TEST_CLASSES @$TARGET/sources.lst @$TARGET/test-sources.lst
   echo "execute tests through JUnit"
-  java $JAR_OPTS -jar $LIB_TEST --cp "${EXTERNAL_JARS}${FS}${CLASSES}${FS}${TEST_CLASSES}${FS}." --scan-class-path
+  java $JAR_OPTS -jar $LIB_TEST execute -cp "${EXTERNAL_JARS}${FS}${CLASSES}${FS}${TEST_CLASSES}${FS}." --scan-class-path
   echo -e "   |_ ${GREEN}done$NC"
   echo "- execute tests through JUnit $SRC/test." >>target/build.log
   ## TODO Integrate Cucumber tests execution
   ## e.g. 'java -cp "path/to/cucumber-core.jar:path/to/cucumber-java.jar:path/to/cucumber-junit.jar:path/to/other/dependencies/*:path/to/your/classes" cucumber.api.cli.Main --glue com.your.step.definitions path/to/your/features'
 }
-echo "build project ' ${PROJECT_NAME}' version ${PROJECT_VERSION}..."
+echo "build project ' DemoGenJ004' version 0.0.3..."
 # Check if no arguments were passed
 if [ $# -eq 0 ]; then
     echo "No options provided. Defaulting to 'c b m j'."
@@ -183,8 +185,8 @@ do
     echo "build jar..."
       for app in ${MAIN_CLASS}
       do
-        echo ">> for ${PROJECT_NAME}.$app..."
-        jar cvfm target/build/${PROJECT_NAME}-$app-${PROJECT_VERSION}.jar target/MANIFEST.MF -C target/classes .
+        echo ">> for DemoGenJ004.$app..."
+        jar cvfm target/build/DemoGenJ004-$app-0.0.3.jar target/MANIFEST.MF -C target/classes .
         mkdir -p target/build/libs
         cp -vr ./libs/ target/build/libs
         echo "done."
@@ -192,14 +194,14 @@ do
       ;;
     m | --manifest)
       echo "create manifest ..."
-      echo """Manifest-Version: ${PROJECT_NAME}
+      echo """Manifest-Version: DemoGenJ004
 Main-Class: ${MAIN_CLASS}
 Class-Path: ${JARS}
 Created-By: ${JAVA_BUILD}
-Implementation-Title: ${PROJECT_NAME}
-Implementation-Version: ${PROJECT_VERSION}-build_${GIT_COMMIT_ID:0:12}
-Implementation-Vendor: ${VENDOR_NAME}
-Implementation-Author: ${AUTHOR_NAME}
+Implementation-Title: DemoGenJ004
+Implementation-Version: 0.0.3-build_${GIT_COMMIT_ID:0:12}
+Implementation-Vendor: Vendor
+Implementation-Author: Frédéric Delorme
 """ >>target/MANIFEST.MF
       ;;
     r | --run | --execute)
@@ -208,9 +210,9 @@ Implementation-Author: ${AUTHOR_NAME}
         shift # Supprime le premier argument (r)
         if [ -n "${JARS}"]
         then
-        	java $RUNTIME_OPTS -jar target/build/${PROJECT_NAME}-${MAIN_CLASS}-${PROJECT_VERSION}.jar "$@"
+        	java $RUNTIME_OPTS -jar target/build/DemoGenJ004-${MAIN_CLASS}-0.0.3.jar "$@"
         else
-        	java -cp ${JARS// //${FS}} $RUNTIME_OPTS -jar target/build/${PROJECT_NAME}-${MAIN_CLASS}-${PROJECT_VERSION}.jar "$@"
+        	java -cp ${JARS// //${FS}} $RUNTIME_OPTS -jar target/build/DemoGenJ004-${MAIN_CLASS}-0.0.3.jar "$@"
         fi
       ;;
     s | --src)
@@ -222,10 +224,10 @@ Implementation-Author: ${AUTHOR_NAME}
     re | --release)
       echo "release ..."
       mkdir -p ${TARGET}/release
-      tar -czvf ${TARGET}/release/${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz \
-       ${TARGET}/build ${TARGET}/${PROJECT_NAME}-${PROJECT_VERSION}-sources.jar \
-       ${TARGET}/${PROJECT_NAME}-${PROJECT_VERSION}-javadoc.jar
-      echo "Here is the release file ${TARGET}/release/${PROJECT_NAME}-${PROJECT_VERSION}.tar.gz"
+      tar -czvf ${TARGET}/release/DemoGenJ004-0.0.3.tar.gz \
+       ${TARGET}/build ${TARGET}/DemoGenJ004-0.0.3-sources.jar \
+       ${TARGET}/DemoGenJ004-0.0.3-javadoc.jar
+      echo "Here is the release file ${TARGET}/release/DemoGenJ004-0.0.3.tar.gz"
       ;;
     h | --help)
       echo "$0 Usage"

@@ -1,0 +1,12 @@
+#!/bin/bash
+JUNIT_VERSION=6.0.0
+mkdir -p $1/{src/{{main,test}/{java,resources},docs},libs}
+echo "#README" >$1/README.md
+echo "target/" >$1/.gitignore
+echo "java=24-zulu">.sdkmanrc
+curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/$JUNIT_VERSION/junit-platform-console-standalone-$JUNIT_VERSION.jar >$1/libs/junit-platform-console-standalone-$JUNIT_VERSION.jar
+curl -sL https://gist.githubusercontent.com/mcgivrer/3fabaa2cd1a1e1fc934c7b5da6a6e8ca/raw/build >$1/build
+git init -b main --quiet $1/
+cd myapp
+git add .
+git commit -m "Create Project $1"

@@ -1,5 +1,5 @@
 #!/bin/bash
-junit_version=1.12.2
+junit_version=6.0.1
 app_name=$1
 # create project folder structure
 mkdir -p ${app_name}/{src/{docs,{main,test}/{java,resources/i18n}},libs}
@@ -39,6 +39,7 @@ target/
 mkdir -p "${app_name}/src/main/java/core"
 CAT <<EOL > "${app_name}/src/main/java/core/App.java"
 package core;
+
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Locale;
@@ -52,79 +53,82 @@ public class App {
   }
 
   public enum LogLevel {
-    DEBUG, INFO, WARN, ERROR;
+    DEBUG, INFO, WARN, ERROR, FATAL;
   }
 
-  private static final ResourceBundle messages = ResourceBundle.getBundle(\"i18n/messages\", Locale.ROOT);
+  private static final ResourceBundle messages = ResourceBundle.getBundle("i18n/messages", Locale.ROOT);
   private static final Properties config = new Properties();
-  private static String configFileName = \"config.properties\";
+  private static String configFileName = "config.properties";
 
   private static int debug = 0;
   private Mode mode = Mode.PROD;
 
   public App() {
-    log(App.class, LogLevel.INFO, \"%s (%s)\".formatted(
-    	messages.getString(\"app.name\"), 
-    	messages.getString(\"app.version\")));
-    log(App.class, LogLevel.INFO, \"Language: %s\".formatted(
-    	messages.getString(\"app.language\");));
-    log(App.class, LogLevel.INFO, \"Starts...\");
+    info(App.class, "%s (%s)".formatted(
+        messages.getString("app.name"),
+        messages.getString("app.version")));
+    debug(App.class, 0, "Language: %s".formatted(messages.getString("app.language")));
+    info(App.class, "Starts...");
 
   }
 
   public void run(String[] args) {
     initConfig();
-	parseArguments(args);
-    configFileName = config.getProperty(\"configFileName\");
+    parseArguments(args);
+    configFileName = config.getProperty("configFileName");
     loadConfig(configFileName);
-	parseArguments(args);
+    parseArguments(args);
     parseConfig();
-    log(App.class, LogLevel.INFO, \"End.\");
-  }
-  
-  private void initConfig() {
-    // set default values
-    config.setProperty(\"app.debug\", \"0\");
-    config.setProperty(\"app.mode\", \"PROD\");
-    config.setProperty(\"configFileName\", \"config.properties\");
+    info(App.class, "End.");
   }
 
-  private void loadConfig(String fileName){
-      // load values from configuration file
+  private void initConfig() {
+    // set default values
+    config.setProperty("app.debug", "0");
+    config.setProperty("app.mode", "PROD");
+    config.setProperty("configFileName", "/config.properties");
+  }
+
+  private void loadConfig(String fileName) {
+    // load values from configuration file
     try {
       config.load(this.getClass().getResourceAsStream(fileName));
       // extract values
     } catch (IOException e) {
-      log(App.class, LogLevel.ERROR, \"Unable to read configuration from file '%s' : %s%n\", fileName, e.getMessage());
+      error(App.class, "Unable to read configuration from file '%s' : %s%n", fileName, e.getMessage());
     }
   }
 
   private void parseConfig() {
     for (String key : config.stringPropertyNames()) {
       switch (key) {
-		  case \"app.debug\", \"debug\" -> {
-		    int debug = Integer.parseInt(config.getProperty(key));
-		    log(App.class, LogLevel.INFO, \"- debug: %d\", debug);
-		  }
-		  case \"app.mode\", \"mode\", \"m\" -> {
-		    this.mode = Mode.valueOf(config.getProperty(key).toUpperCase());
-		    log(App.class, LogLevel.INFO, \"- mode: %s\", mode);
-		  }
-		  default -> {
-
-		  }
+        case "configFileName", "cfg" -> {
+          configFileName = config.getProperty(key);
+          info(App.class, "- configFileName: %s", configFileName);
+        }
+        case "app.debug", "debug", "d" -> {
+          int debug = Integer.parseInt(config.getProperty(key));
+          info(App.class, "- debug: %d", debug);
+        }
+        case "app.mode", "mode", "m" -> {
+          this.mode = Mode.valueOf(config.getProperty(key).toUpperCase());
+          info(App.class, "- mode: %s", mode);
+        }
+        default -> {
+          info(App.class, "Unknown config key: %s", key);
+        }
       }
     }
   }
 
-  private void parseArguments(String[] args){
-      for (String arg : args) {
-      if (arg.contains(\"=\")) {
-        String[] keyValue = arg.split(\"=\", 2);
+  private void parseArguments(String[] args) {
+    for (String arg : args) {
+      if (arg.contains("=")) {
+        String[] keyValue = arg.split("=", 2);
         String key = keyValue[0];
         String value = keyValue[1];
         config.setProperty(key, value);
-        log(App.class, LogLevel.INFO, \"Overridden config: %s=%s\", key, value);
+        info(App.class, "Set config %s=%s from command-line argument", key, value);
       }
     }
   }
@@ -138,8 +142,37 @@ public class App {
     return debug > i;
   }
 
-  public static void log(Class<?> className, LogLevel level, String message, Object... args) {
-    System.out.printf(\"%s;%s;[%s];%s%n\", ZonedDateTime.now(), level, className.getName(), message.formatted(args));
+  /** ---- Logging API ---- ***/
+
+  private static void log(Class<?> className, LogLevel level, String message, Object... args) {
+    if (level == LogLevel.ERROR || level == LogLevel.FATAL) {
+      System.err.printf("%s;%s;[%s];%s%n", ZonedDateTime.now(), level, className.getName(), message.formatted(args));
+      return;
+    }
+    System.out.printf("%s;%s;[%s];%s%n", ZonedDateTime.now(), level, className.getName(), message.formatted(args));
+  }
+
+  public static void debug(Class<?> className, int debugLevel, String message, Object... args) {
+    if (debug > debugLevel) {
+      log(className, LogLevel.DEBUG, message, args);
+    }
+  }
+
+  public static void info(Class<?> className, String message, Object... args) {
+    log(className, LogLevel.INFO, message, args);
+  }
+
+  public static void warn(Class<?> className, String message, Object... args) {
+    log(className, LogLevel.WARN, message, args);
+  }
+
+  public static void error(Class<?> className, String message, Object... args) {
+    log(className, LogLevel.ERROR, message, args);
+  }
+
+  public static void fatal(Class<?> className, int errorLevel, String message, Object... args) {
+    log(className, LogLevel.FATAL, message, args);
+    System.exit(errorLevel);
   }
 }
 EOL
@@ -147,19 +180,19 @@ EOL
 mkdir -p ${app_name}/.vscode
 cat <<EOL > ${app_name}/.vscode/settings.json
 {
-    \"java.format.settings.url\": \".vscode/java-formatter.xml\",
-    \"java.project.sourcePaths\": [
-        \"src/main/java\",
-        \"src/main/resources\",
-        \"src/test/java\",
-        \"src/test/resources\"
+    "java.format.settings.url": ".vscode/java-formatter.xml",
+    "java.project.sourcePaths": [
+        "src/main/java",
+        "src/main/resources",
+        "src/test/java",
+        "src/test/resources"
     ],
-    \"java.project.encoding\": \"warning\",
-    \"java.project.referencedLibraries\": [],
-    \"java.project.outputPath\": \"target/classes\"
+    "java.project.encoding": "warning",
+    "java.project.referencedLibraries": [],
+    "java.project.outputPath": "target/classes"
 }
 EOL
-cp ~/scripts/scripts-library/java-formatter.xml ${app_name}/.vscode/java-formatter.xml	
+cp ~/scripts/scripts-library/java-formatter.xml ${app_name}/.vscode/java-formatter.xml
 
 # Add docs
 app_name=${app_name}
@@ -172,14 +205,16 @@ This is the preface for the documentation of the project ${app_name}.
 You must rewrite this document according to your specifications.
 
 >[!NOTE]
->Please us the markdown text format to easily create 
->docs in multiple format with the 'pandoc' tool. 
+>Please us the markdown text format to easily create
+>docs in multiple format with the 'pandoc' tool.
 EOL
 # Add build script
-cp ~/scripts/build-mini.sh ${app_name}/build
+
+cp ~/scripts/templates/build_micro.txt ${app_name}/build
 # Add junit library
 curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/${junit_version}/junit-platform-console-standalone-${junit_version}.jar >${app_name}/libs/junit-platform-console-standalone-${junit_version}.jar
 # create local git repository
+cd ${app_name}
 git init --initial-branch=main
 git -C "${app_name}" add .
 git -C "${app_name}" commit -m "Create the project '${app_name}'"
