@@ -1,13 +1,13 @@
 #!/bin/bash
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <project_name>"
-    echo "Description: create a java project structure into <project_name> with build script"
-    echo "NOTE: if git user.name and user.email configuration are not set, git initialization will fail"
-    echo "      Make sure to set them using:"
-    echo "        git config --global user.name \"Your Name\""
-    echo "        git config --global user.email \"your.email@example.com\""
-    echo "      After setting these, rerun the script."
-    exit 1
+  echo "Usage: $0 <project_name>"
+  echo "Description: create a java project structure into <project_name> with build script"
+  echo "NOTE: if git user.name and user.email configuration are not set, git initialization will fail"
+  echo "      Make sure to set them using:"
+  echo "        git config --global user.name \"Your Name\""
+  echo "        git config --global user.email \"your.email@example.com\""
+  echo "      After setting these, rerun the script."
+  exit 1
 fi
 JUNIT_VERSION=6.0.0
 GIT_USERNAME="$(git config --get user.name)<$(git config --get user.email)>"
@@ -16,7 +16,7 @@ mkdir -p $1/{src/{{main,test}/{java/core,resources},docs},libs,.vscode}
 # add readme
 echo """# README
 
-## Project Test013
+## Project $1 version 0.0.1
 
 ### Build JAR with sdkman and javac
 
@@ -38,12 +38,32 @@ chmod +x ./build
 ./build run debug=2
 \`\`\`
 
->**Note** You can pass as many argument after run as you need.
+>**Note** 
+>You can pass as many argument after run as you need:
+>e.g.: 
+> - \`debug\`=[1 to 5], 
+> - \`mode\`=[DEVELOPMENT,TESTING,PRODUCTION]
+> - \`timeout\`=[milliseconds]
+
+#### help on program
+
+\`\`\`bash
+./build run help
+\`\`\`
+
+#### run from java
+
+\`\`\`bash
+java -jar target/build/$1-0.0.1.jar debug=2
+\`\`\`
+
+Thanks,
+$GIT_USERNAME.
 """ >$1/README.md
 # add gitignore
 echo "target/" >$1/.gitignore
 # add sdkman config
-echo "java=25-zulu">.sdkmanrc
+echo "java=25-zulu" >$1/.sdkmanrc
 ## download JUnit
 curl -sL https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/$JUNIT_VERSION/junit-platform-console-standalone-$JUNIT_VERSION.jar >$1/libs/junit-platform-console-standalone-$JUNIT_VERSION.jar
 ## build script
@@ -55,6 +75,7 @@ sed -i \
   -e "s/\[\[DEFAULT_AUTHOR_NAME\]\]/\"$GIT_USERNAME\"/g" \
   -e "s/\[\[DEFAULT_VENDOR_NAME\]\]/VENDORNAME/g" \
   "$1/build"
+chmod +x $1/build
 ## create VSCode support
 echo """
 {
@@ -69,46 +90,131 @@ echo """
     ],
     \"java.project.outputPath\": \"target/classes\"
 }
-""" > $1/.vscode/settings.json
-## Create source
-echo """
-package core;
+""" >$1/.vscode/settings.json
+## Create Main app class source
+echo """package core;
+
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.Properties;
 
 public class App {
+    public enum DebugLevel {
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL;
+    }
+
+    public enum AppMode {
+        DEVELOPMENT,
+        TESTING,
+        PRODUCTION;
+
+    }
+
+    private Properties config = new Properties();
     public static int debug = 0;
+    private static AppMode mode = AppMode.DEVELOPMENT;
+    private static int timeout = 1000; // in milliseconds
 
     public App() {
-        System.out.println(\"Start App class...\");
+        log(getClass(), DebugLevel.INFO, \"Start App class...\");
     }
 
     public void run(String[] args) {
+        initialize(args);
+        try {
+            log(getClass(), DebugLevel.INFO, \"Sleeping for %d ms...\", timeout);
+            Thread.sleep(timeout);
+            log(getClass(), DebugLevel.INFO, \"Execution completed after timeout.\");
+        } catch (InterruptedException e) {
+            log(getClass(), DebugLevel.WARN, \"Execution interrupted.\");
+        }
+        log(getClass(), DebugLevel.INFO, \"End App class.\");
+    }
+
+    private void initialize(String[] args) {
+        // set default values
+        log(getClass(), DebugLevel.INFO, \"Set default configuration\");
+        config.setProperty(\"debug\", \"0\");
+        config.setProperty(\"mode\", \"DEVELOPMENT\");
+        config.setProperty(\"timeout\", \"1000\");
+        parseConfiguration();
+        log(App.class, DebugLevel.INFO, \"  -> default configuration initialized\");
+        // parse configuration file
+        try {
+            log(getClass(), DebugLevel.INFO, \"Load configuration from file\");
+            config.load(App.class.getResourceAsStream(\"/config.properties\"));
+            log(App.class, DebugLevel.INFO, \"  loaded config.properties\");
+            parseConfiguration();
+            log(App.class, DebugLevel.INFO, \"  -> configuration loaded\");
+        } catch (IOException e) {
+            log(App.class, DebugLevel.ERROR, \"  cannot load config.properties: %s\", e.getMessage());
+        }
+        // parse command line arguments
+        parseCliArgs(args);
+        parseConfiguration();
+    }
+
+    private void parseConfiguration() {
+        for (String key : config.stringPropertyNames()) {
+            parseConfig(key, config.getProperty(key));
+        }
+    }
+
+    private void parseCliArgs(String[] args) {
         if (args.length > 0) {
-            System.out.println(\"parse args:\");
+            log(getClass(), DebugLevel.INFO, \"parse args:\");
             int i = 0;
             for (String arg : args) {
-                System.out.printf(\"- arg[%d]: %s%n\", i++, arg);
+                log(getClass(), DebugLevel.INFO, \"- arg[%d]: %s\", i++, arg);
                 parseArg(arg);
             }
         } else {
-            System.out.println(\"- no argument...\");
+            log(getClass(), DebugLevel.INFO, \"- no argument...\");
         }
-        System.out.println(\"End App class.\");
     }
 
-    public void parseArg(String arg) {
+    private void parseArg(String arg) {
         if (arg.contains(\"=\")) {
             String[] key = arg.split(\"=\", 2);
-            switch (key[0].toLowerCase().trim()) {
-                case \"d\", \"-d\", \"debug\", \"--debug\" -> {
-                    debug = Integer.parseInt(key[1]);
-                    System.out.printf(\"  set debug level to %d%n\", debug);
-                }
-                default -> {
-                    System.out.printf(\"  unknown argument: %s%n\", arg);
-                }
-            }
+            config.setProperty(key[0], key[1]);
         } else {
-            System.out.printf(\"  unknown argument: %s%n  Respect the format key=value%n\", arg);
+            config.setProperty(arg, \"true\");
+        }
+    }
+
+    private void parseConfig(String key, String value) {
+        // first is config key.value, then last possible cli key args.
+        switch (key.toLowerCase().trim()) {
+            // set debug level from config file or CLI key-value pair
+            case \"debug\" -> {
+                debug = Integer.parseInt(value);
+                log(getClass(), DebugLevel.INFO, \"  set debug level to %d\", debug);
+            }
+            case \"mode\" -> {
+                mode = AppMode.valueOf(value.toUpperCase());
+                log(getClass(), DebugLevel.INFO, \"  set app mode to %s\", value);
+            }
+            case \"timeout\" -> {
+                timeout = Integer.parseInt(value);
+                log(getClass(), DebugLevel.INFO, \"  set app timeout to %d ms\", timeout);
+            }
+            case \"h\", \"-h\", \"help\", \"-help\" -> {
+                log(getClass(), DebugLevel.INFO, \"  help requested, exiting...\");
+                System.out.println(\"Usage: java -jar app.jar [key=value]...\n\" +
+                        \"Available options:\n\" +
+                        \"  debug=<level>       Set debug level (0=none, 1=some, 2=verbose)\n\" +
+                        \"  mode=<mode>         Set application mode (DEVELOPMENT, TESTING, PRODUCTION)\n\" +
+                        \"  timeout=<ms>        Set application timeout in milliseconds\n\" +
+                        \"  help                Show this help message\");
+                System.exit(0);
+            }
+            default -> {
+                log(getClass(), DebugLevel.WARN, \"  unknown argument: %s=%s\", key, value);
+            }
         }
     }
 
@@ -116,10 +222,24 @@ public class App {
         App app = new App();
         app.run(args);
     }
+
+    public static void log(Class<?> cls, DebugLevel level, String message, Object... args) {
+        System.out.printf(\"%s;%s;[%s];%s%n\",
+                ZonedDateTime.now(),
+                cls.getCanonicalName(),
+                level.name(),
+                message.formatted(args));
+    }
 }
-""" > $1/src/main/java/core/App.java
+""" >$1/src/main/java/core/App.java
+# add config file
+echo """debug=2
+mode=DEVELOPMENT
+timeout=3000
+""" >$1/src/main/resources/config.properties
 git init -b main --quiet $1/
 cd $1
 git add .
 git commit -m "Create Project $1"
 echo "==> Project $1 created."
+
